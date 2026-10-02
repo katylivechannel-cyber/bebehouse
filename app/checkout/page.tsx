@@ -1,12 +1,16 @@
 'use client'
 
 import Link from 'next/link'
+import { useState } from 'react'
 import { ChevronLeft } from 'lucide-react'
 import { useCart } from '@/components/cart-provider'
 import { formatPrice } from '@/lib/format'
 
 export default function CheckoutPage() {
   const { count, total } = useCart()
+  const [fullName, setFullName] = useState('')
+  const [phone, setPhone] = useState('')
+const [cdekPoint, setCdekPoint] = useState('')
 
   return (
     <main className="flex flex-col gap-6 pb-8">
@@ -22,7 +26,51 @@ export default function CheckoutPage() {
           Оформление заказа
         </h1>
       </div>
+     
+<section className="flex flex-col gap-4 rounded-3xl bg-card p-5">
+  <div className="flex flex-col gap-2">
+    <label htmlFor="fullName" className="text-sm font-medium">
+      ФИО
+    </label>
 
+    <input
+      id="fullName"
+      type="text"
+      value={fullName}
+      onChange={(e) => setFullName(e.target.value)}
+      placeholder="Иванова Анна Сергеевна"
+      className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-base outline-none"
+    />
+  </div>
+  <div className="flex flex-col gap-2">
+  <label htmlFor="phone" className="text-sm font-medium">
+    Номер телефона
+  </label>
+
+  <input
+    id="phone"
+    type="tel"
+    value={phone}
+    onChange={(e) => setPhone(e.target.value)}
+    placeholder="+7 999 123-45-67"
+    className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-base outline-none"
+  />
+    <div className="flex flex-col gap-2">
+  <label htmlFor="cdekPoint" className="text-sm font-medium">
+    Адрес ПВЗ СДЭК
+  </label>
+
+  <input
+    id="cdekPoint"
+    type="text"
+    value={cdekPoint}
+    onChange={(e) => setCdekPoint(e.target.value)}
+    placeholder="Например: Санкт-Петербург, ул. ..."
+    className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-base outline-none"
+  />
+</div>
+</div>
+</section>
       <section className="rounded-3xl bg-card p-5">
         <p className="text-sm text-muted-foreground">
           Товаров: {count}

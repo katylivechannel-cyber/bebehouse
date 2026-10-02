@@ -28,7 +28,8 @@ export default function PaymentSuccessPage() {
 
       const data = await response.json()
 
-      if (data.paid) {
+   if (data.paid) {
+  localStorage.removeItem('bebehouse-cart')
   clear()
 
   const orderSent = localStorage.getItem('bebehouseOrderSent')

@@ -45,6 +45,10 @@ export async function POST(request: Request) {
     )
 
     const data = await response.json()
+    console.log('TOCHKA RESPONSE:', {
+  status: response.status,
+  data,
+})
 
     if (!response.ok) {
       return NextResponse.json(

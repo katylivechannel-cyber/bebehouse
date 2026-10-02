@@ -125,8 +125,11 @@ const [cdekPoint, setCdekPoint] = useState('')
     'Content-Type': 'application/json',
   },
   body: JSON.stringify({
-    total,
-  }),
+  items: lines.map((line) => ({
+    productId: line.product.id,
+    quantity: line.quantity,
+  })),
+}),
 })
 
 const data = await response.json()

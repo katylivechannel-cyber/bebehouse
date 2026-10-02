@@ -21,14 +21,13 @@ export type Product = {
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQkGc2zEWv2_onV0oN1lRmolJIVb016GLGTPnPAPGvA0NiMUcLefgy_Rbf8-ksKg7vmPr3ATLQvNbdk/pub?gid=0&single=true&output=csv'
 
 const categoryImages: Record<string, string> = {
-  'Куклы': '/images/categories/dolls.png',
-  'Коляски для кукол': '/images/categories/strollers.png',
-  'Коляски': '/images/categories/strollers.png',
-  'Развивающие игрушки': '/images/categories/educational.png',
-  'Музыкальные игрушки': '/images/categories/musical.png',
-  'Мягкие игрушки': '/images/categories/soft-toys.png',
-  'Ролевые игры': '/images/categories/role-play.png',
-  'Творчество': '/images/categories/creativity.png',
+'Куклы': '/images/categories/dolls.png',
+'Ролевые игры': '/images/categories/role-play.png',
+'Музыкальные игрушки': '/images/categories/musical.png',
+'Творчество': '/images/categories/creativity.png',
+'Развивающие игрушки': '/images/categories/educational.png',
+'Для малышей': '/images/categories/for-babies.png',
+'Аксессуары': '/images/categories/accessories.png',
 }
 
 function slugify(value: string) {

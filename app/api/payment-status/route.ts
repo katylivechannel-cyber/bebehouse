@@ -47,10 +47,12 @@ export async function POST(request: Request) {
       )
     }
 
-    return NextResponse.json({
-      status: data.Data?.status,
-      paid: data.Data?.status === 'APPROVED',
-    })
+    const status = data.Data?.Operation?.[0]?.status
+
+return NextResponse.json({
+  status,
+  paid: status === 'APPROVED',
+})
   } catch (error: any) {
     return NextResponse.json(
       {

@@ -13,7 +13,7 @@ export default function CheckoutPage() {
 const [cdekPoint, setCdekPoint] = useState('')
   const isFormValid =
   fullName.trim().length > 0 &&
-  phone.replace(/\D/g, '').length === 11 &&
+  phone.length === 16 &&
   cdekPoint.trim().length > 0
 
   return (

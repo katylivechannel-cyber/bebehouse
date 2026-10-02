@@ -104,32 +104,30 @@ const [cdekPoint, setCdekPoint] = useState('')
   type="button"
   disabled={!isFormValid}
         onClick={async () => {
-          alert('Кнопка работает')
+         const response = await fetch('/api/payment', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    total,
+  }),
+})
+
+const data = await response.json()
+
+if (data.paymentLink) {
+  window.location.href = data.paymentLink
+} else {
+  alert('Не удалось создать оплату')
+}
           
- const response = await fetch('/api/order', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      fullName,
-      phone,
-      cdekPoint,
-      items: lines.map(({ product, quantity }) => ({
-        name: product.name,
-        quantity,
-        price: product.price,
-      })),
-      total,
-    }),
-  })
-          const data = await response.json()
-alert(JSON.stringify(data))
+ 
 }}
         
   className="flex h-15 w-full items-center justify-center rounded-full bg-primary text-base font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40"
 >
-  Подтвердить заказ
+  Перейти к оплате
 </button>
     </main>
   )

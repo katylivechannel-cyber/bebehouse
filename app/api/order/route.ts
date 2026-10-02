@@ -22,10 +22,10 @@ export async function POST(request: Request) {
       `📦 ПВЗ СДЭК: ${cdekPoint}`,
       '',
       'Товары:',
-      ...items.map(
-        (item: { name: string; quantity: number; price: number }) =>
-          `• ${item.name} — ${item.quantity} шт. × ${item.price.toLocaleString('ru-RU')} ₽`
-      ),
+     ...items.map(
+  (item: { product: { name: string; price: number }; quantity: number }) =>
+    `• ${item.product.name} — ${item.quantity} шт. × ${item.product.price.toLocaleString('ru-RU')} ₽`
+),
       '',
       `💰 Итого: ${total.toLocaleString('ru-RU')} ₽`,
     ].join('\n')

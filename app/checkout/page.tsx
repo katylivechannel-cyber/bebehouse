@@ -106,7 +106,7 @@ const [cdekPoint, setCdekPoint] = useState('')
         onClick={async () => {
           alert('Кнопка работает')
           
-  await fetch('/api/order', {
+ const response = await fetch('/api/order', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -123,7 +123,10 @@ const [cdekPoint, setCdekPoint] = useState('')
       total,
     }),
   })
+          const data = await response.json()
+alert(JSON.stringify(data))
 }}
+        
   className="flex h-15 w-full items-center justify-center rounded-full bg-primary text-base font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40"
 >
   Подтвердить заказ

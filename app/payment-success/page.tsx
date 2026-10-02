@@ -27,6 +27,28 @@ export default function PaymentSuccessPage() {
       const data = await response.json()
 
       if (data.paid) {
+        const orderSent = localStorage.getItem('bebehouseOrderSent')
+
+if (orderSent === operationId) {
+  setPaymentStatus('paid')
+  return
+}
+      const savedOrder = localStorage.getItem('bebehouseOrder')
+
+if (savedOrder) {
+  const order = JSON.parse(savedOrder)
+
+  const orderResponse = await fetch('/api/order', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(order),
+  })
+  if (orderResponse.ok) {
+  localStorage.setItem('bebehouseOrderSent', operationId)
+}
+}
         setPaymentStatus('paid')
       } else {
         setPaymentStatus('failed')

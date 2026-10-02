@@ -6,6 +6,9 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  outputFileTracingIncludes: {
+    '/api/payment': ['./tochka-ca.pem'],
+  },
 }
 
 export default nextConfig

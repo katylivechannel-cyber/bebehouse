@@ -104,6 +104,8 @@ const [cdekPoint, setCdekPoint] = useState('')
   type="button"
   disabled={!isFormValid}
         onClick={async () => {
+          alert('Кнопка работает')
+          
   await fetch('/api/order', {
     method: 'POST',
     headers: {

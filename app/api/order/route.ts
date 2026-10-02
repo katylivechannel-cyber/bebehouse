@@ -45,8 +45,9 @@ export async function POST(request: Request) {
 )
 
 if (!telegramResponse.ok) {
+  const telegramError = await telegramResponse.json()
   return NextResponse.json(
-    { error: 'Не удалось отправить заказ в Telegram' },
+   { error: telegramError },
     { status: 500 }
   )
 }

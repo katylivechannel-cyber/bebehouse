@@ -7,7 +7,7 @@ import { useCart } from '@/components/cart-provider'
 import { formatPrice } from '@/lib/format'
 
 export default function CheckoutPage() {
-  const { count, total } = useCart()
+  const { lines, count, total } = useCart()
   const [fullName, setFullName] = useState('')
  const [phone, setPhone] = useState('+7')
 const [cdekPoint, setCdekPoint] = useState('')
@@ -104,6 +104,25 @@ const [cdekPoint, setCdekPoint] = useState('')
       <button
   type="button"
   disabled={!isFormValid}
+        onClick={async () => {
+  await fetch('/api/order', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      fullName,
+      phone,
+      cdekPoint,
+      items: lines.map(({ product, quantity }) => ({
+        name: product.name,
+        quantity,
+        price: product.price,
+      })),
+      total,
+    }),
+  })
+}}
   className="flex h-15 w-full items-center justify-center rounded-full bg-primary text-base font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40"
 >
   Подтвердить заказ

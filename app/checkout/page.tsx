@@ -132,6 +132,7 @@ const [cdekPoint, setCdekPoint] = useState('')
 const data = await response.json()
 
 if (data.paymentLink) {
+  localStorage.setItem('tochkaOperationId', data.operationId)
   window.location.href = data.paymentLink
 } else {
   alert(JSON.stringify(data, null, 2))

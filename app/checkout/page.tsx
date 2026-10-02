@@ -11,6 +11,10 @@ export default function CheckoutPage() {
   const [fullName, setFullName] = useState('')
  const [phone, setPhone] = useState('+7')
 const [cdekPoint, setCdekPoint] = useState('')
+  const isFormValid =
+  fullName.trim().length > 0 &&
+  phone.replace(/\D/g, '').length === 11 &&
+  cdekPoint.trim().length > 0
 
   return (
     <main className="flex flex-col gap-6 pb-8">
@@ -97,6 +101,13 @@ const [cdekPoint, setCdekPoint] = useState('')
           </span>
         </div>
       </section>
+      <button
+  type="button"
+  disabled={!isFormValid}
+  className="flex h-15 w-full items-center justify-center rounded-full bg-primary text-base font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40"
+>
+  Подтвердить заказ
+</button>
     </main>
   )
 }

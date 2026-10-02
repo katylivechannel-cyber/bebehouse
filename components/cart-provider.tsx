@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useCallback, useContext, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { Product } from '@/lib/catalog'
 
 type CartLine = { product: Product; quantity: number }
@@ -22,7 +22,23 @@ const CartContext = createContext<CartContextValue | null>(null)
 
 export function CartProvider({ children, products }: { children: React.ReactNode; products: Product[] }) {
   const [quantities, setQuantities] = useState<Record<string, number>>({})
+  const cartLoaded = useRef(false)
+  useEffect(() => {
+  const saved = localStorage.getItem('bebehouse-cart')
 
+  if (saved) {
+    try {
+      setQuantities(JSON.parse(saved))
+    } catch {
+      localStorage.removeItem('bebehouse-cart')
+    }
+  }
+    cartLoaded.current = true
+}, [])
+useEffect(() => {
+  if (!cartLoaded.current) return
+  localStorage.setItem('bebehouse-cart', JSON.stringify(quantities))
+}, [quantities])
   const setQuantity = useCallback((productId: string, quantity: number) => {
     setQuantities((current) => {
       const next = { ...current }

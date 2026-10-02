@@ -10,6 +10,7 @@ export default function CheckoutPage() {
   const { lines, count, total } = useCart()
   const [fullName, setFullName] = useState('')
  const [phone, setPhone] = useState('+7')
+  const [email, setEmail] = useState('')
 const [cdekPoint, setCdekPoint] = useState('')
   const isFormValid =
   fullName.trim().length > 0 &&
@@ -72,6 +73,21 @@ const [cdekPoint, setCdekPoint] = useState('')
     placeholder="+7 999 123-45-67"
     className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-base outline-none"
   />
+    <div className="flex flex-col gap-2">
+  <label htmlFor="email" className="text-sm font-medium">
+    Электронная почта
+  </label>
+
+  <input
+    id="email"
+    type="email"
+    value={email}
+    onChange={(e) => setEmail(e.target.value)}
+    placeholder="example@mail.ru"
+    autoComplete="email"
+    className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-base outline-none"
+  />
+</div>
     <div className="flex flex-col gap-2">
   <label htmlFor="cdekPoint" className="text-sm font-medium">
     Адрес ПВЗ СДЭК

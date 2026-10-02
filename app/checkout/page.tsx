@@ -102,7 +102,6 @@ const [cdekPoint, setCdekPoint] = useState('')
       </section>
       <button
   type="button"
-  disabled={!isFormValid}
         onClick={async () => {
          const response = await fetch('/api/payment', {
   method: 'POST',

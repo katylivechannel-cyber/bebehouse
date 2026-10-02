@@ -7,113 +7,83 @@ import { useCart } from '@/components/cart-provider'
 
 export default function PaymentSuccessPage() {
   const { clear } = useCart()
-  const [paymentStatus, setPaymentStatus] = useState<'checking' | 'paid' | 'failed'>('checking')
+
+  const [paymentStatus, setPaymentStatus] = useState<
+    'checking' | 'paid' | 'failed'
+  >('checking')
+
   useEffect(() => {
-  const checkPayment = async () => {
-    const operationId = localStorage.getItem('tochkaOperationId')
+    const completeOrder = async () => {
+      const operationId = localStorage.getItem('tochkaOperationId')
 
-    if (!operationId) {
-      setPaymentStatus('failed')
-      return
-    }
+      if (!operationId) {
+        setPaymentStatus('failed')
+        return
+      }
 
-    try {
-      const response = await fetch('/api/payment-status', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ operationId }),
-      })
+      try {
+        const response = await fetch('/api/complete-order', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ operationId }),
+        })
 
-      const data = await response.json()
+        const data = await response.json()
 
-   if (data.paid) {
-  localStorage.removeItem('bebehouse-cart')
-  clear()
+        if (response.ok && data.paid) {
+          localStorage.removeItem('bebehouse-cart')
+          localStorage.removeItem('bebehouseOrder')
+          localStorage.removeItem('bebehouseOrderSent')
+          localStorage.removeItem('bebehouseEmailSent')
 
-  const orderSent = localStorage.getItem('bebehouseOrderSent')
-
-if (orderSent === operationId) {
-  setPaymentStatus('paid')
-  return
-}
-      const savedOrder = localStorage.getItem('bebehouseOrder')
-
-if (savedOrder) {
-  const order = JSON.parse(savedOrder)
-
-  const orderResponse = await fetch('/api/order', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(order),
-  })
-  if (orderResponse.ok) {
-  localStorage.setItem('bebehouseOrderSent', operationId)
-}
-  const emailSent = localStorage.getItem('bebehouseEmailSent')
-
-if (emailSent !== operationId && order.email) {
-  const emailResponse = await fetch('/api/send-email', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      email: order.email,
-      fullName: order.fullName,
-    }),
-  })
-
-  if (emailResponse.ok) {
-    localStorage.setItem('bebehouseEmailSent', operationId)
-  }
-}
-}
-        setPaymentStatus('paid')
-      } else {
+          clear()
+          setPaymentStatus('paid')
+        } else {
+          setPaymentStatus('failed')
+        }
+      } catch {
         setPaymentStatus('failed')
       }
-    } catch {
-      setPaymentStatus('failed')
     }
+
+    completeOrder()
+  }, [clear])
+
+  if (paymentStatus === 'checking') {
+    return (
+      <main className="min-h-screen bg-[#FFFDF8] flex items-center justify-center px-6">
+        <p className="text-[#6F5A4D]">
+          Проверяем оплату...
+        </p>
+      </main>
+    )
   }
 
-  checkPayment()
-}, [])
-  if (paymentStatus === 'checking') {
-  return (
-    <main className="min-h-screen bg-[#FFFDF8] flex items-center justify-center px-6">
-      <p className="text-[#6F5A4D]">
-        Проверяем оплату...
-      </p>
-    </main>
-  )
-}
   if (paymentStatus === 'failed') {
-  return (
-    <main className="min-h-screen bg-[#FFFDF8] flex items-center justify-center px-6">
-      <div className="w-full max-w-md text-center">
-        <h1 className="mb-3 font-serif text-3xl text-[#411D0A]">
-          Оплата не подтверждена
-        </h1>
+    return (
+      <main className="min-h-screen bg-[#FFFDF8] flex items-center justify-center px-6">
+        <div className="w-full max-w-md text-center">
+          <h1 className="mb-3 font-serif text-3xl text-[#411D0A]">
+            Оплата не подтверждена
+          </h1>
 
-        <p className="mb-8 text-[#6F5A4D]">
-          Пожалуйста, вернитесь в корзину и попробуйте ещё раз.
-        </p>
+          <p className="mb-8 text-[#6F5A4D]">
+            Пожалуйста, вернитесь в корзину и попробуйте ещё раз.
+          </p>
 
-        <Link
-          href="/checkout"
-          className="block w-full rounded-full bg-[#411D0A] px-6 py-4 font-medium text-white"
-        >
-          Вернуться к оплате
-        </Link>
-      </div>
-    </main>
-  )
-}
+          <Link
+            href="/checkout"
+            className="block w-full rounded-full bg-[#411D0A] px-6 py-4 font-medium text-white"
+          >
+            Вернуться к оплате
+          </Link>
+        </div>
+      </main>
+    )
+  }
+
   return (
     <main className="min-h-screen bg-[#FFFDF8] flex items-center justify-center px-6">
       <div className="w-full max-w-md text-center">

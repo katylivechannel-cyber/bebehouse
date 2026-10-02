@@ -124,7 +124,11 @@ const [cdekPoint, setCdekPoint] = useState('')
   headers: {
     'Content-Type': 'application/json',
   },
-  body: JSON.stringify({
+ body: JSON.stringify({
+  fullName,
+  phone,
+  email,
+  cdekPoint,
   items: lines.map((line) => ({
     productId: line.product.id,
     quantity: line.quantity,

@@ -4,7 +4,7 @@ export async function POST(request: Request) {
   try {
     const { total } = await request.json()
 
-    const token = process.env.TOCHKA_JWT
+    const token = process.env.TOCHKA_JWT?.trim()
     const customerCode = process.env.TOCHKA_CUSTOMER_CODE
     console.log('TOCHKA JWT CHECK:', {
   exists: Boolean(token),

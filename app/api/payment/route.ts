@@ -36,7 +36,7 @@ export async function POST(request: Request) {
             purpose: 'Заказ bébéhouse',
             paymentMode: ['sbp', 'card'],
             redirectUrl:
-              'https://bebehouse-6b95.vercel.app/payment-success',
+  'https://bebehouse-6b95.vercel.app/payment-success',
             failRedirectUrl:
               'https://bebehouse-6b95.vercel.app/checkout',
           },

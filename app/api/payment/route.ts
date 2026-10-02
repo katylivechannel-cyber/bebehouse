@@ -51,10 +51,12 @@ export async function POST(request: Request) {
       paymentLink: data.Data.paymentLink,
       operationId: data.Data.operationId,
     })
-} catch (error) {
+} catch (error: any) {
   return NextResponse.json(
     {
-      error: error instanceof Error ? error.message : String(error),
+      error: error?.message,
+      cause: error?.cause?.message,
+      code: error?.cause?.code,
     },
     { status: 500 }
   )

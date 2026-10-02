@@ -133,6 +133,17 @@ const data = await response.json()
 
 if (data.paymentLink) {
   localStorage.setItem('tochkaOperationId', data.operationId)
+  localStorage.setItem(
+  'bebehouseOrder',
+  JSON.stringify({
+    fullName,
+    phone,
+    email,
+    cdekPoint,
+    items: lines,
+    total,
+  })
+)
   window.location.href = data.paymentLink
 } else {
   alert(JSON.stringify(data, null, 2))

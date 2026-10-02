@@ -51,10 +51,12 @@ export async function POST(request: Request) {
       paymentLink: data.Data.paymentLink,
       operationId: data.Data.operationId,
     })
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Не удалось создать оплату' },
-      { status: 500 }
-    )
-  }
+} catch (error) {
+  return NextResponse.json(
+    {
+      error: error instanceof Error ? error.message : String(error),
+    },
+    { status: 500 }
+  )
+}
 }

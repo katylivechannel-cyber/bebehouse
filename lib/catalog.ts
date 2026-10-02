@@ -11,6 +11,7 @@ export type Product = {
   name: string
   price: number
   image: string
+  images: string[]
   description: string
   age: string
   country?: string
@@ -94,7 +95,8 @@ export async function getCatalog() {
         brand,
         name,
         price,
-        image: row[col('Фото')]?.trim() || '/placeholder.svg',
+        image: row[col('Фото 1')]?.trim() || '/placeholder.svg',
+images: Array.from({ length: 8 }, (_, i) => row[col(`Фото ${i + 1}`)]?.trim()).filter(Boolean) as string[],
         description: row[col('Описание')]?.trim() || '',
         age: row[col('Возраст')]?.trim() || '',
         categories: [slugify(categoryName)],

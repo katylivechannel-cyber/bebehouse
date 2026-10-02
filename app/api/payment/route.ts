@@ -9,7 +9,13 @@ type CartItem = {
 
 export async function POST(request: Request) {
   try {
-    const { items } = await request.json() as { items: CartItem[] }
+    const { items, fullName, phone, email, cdekPoint } = await request.json() as {
+  items: CartItem[]
+  fullName: string
+  phone: string
+  email: string
+  cdekPoint: string
+}
 
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json(

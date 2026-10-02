@@ -6,6 +6,12 @@ export async function POST(request: Request) {
 
     const token = process.env.TOCHKA_JWT
     const customerCode = process.env.TOCHKA_CUSTOMER_CODE
+    console.log('TOCHKA JWT CHECK:', {
+  exists: Boolean(token),
+  length: token?.length,
+  parts: token?.split('.').length,
+  startsWithEy: token?.startsWith('ey'),
+})
 
     if (!token || !customerCode) {
       return NextResponse.json(

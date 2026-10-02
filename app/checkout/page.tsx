@@ -119,7 +119,7 @@ const data = await response.json()
 if (data.paymentLink) {
   window.location.href = data.paymentLink
 } else {
-  alert('Не удалось создать оплату')
+  alert(JSON.stringify(data, null, 2))
 }
           
  

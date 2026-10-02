@@ -1,0 +1,99 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: var(--font-manrope), system-ui, sans-serif;
+  --font-serif: var(--font-cormorant), Georgia, serif;
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  color-scheme: light;
+  /* milky cream surface, dark brown ink, butter-yellow + powder-blue accents */
+  --background: #f7f1e6;
+  --foreground: #3e2c22;
+  --card: #fffbf4;
+  --card-foreground: #3e2c22;
+  --popover: #fffbf4;
+  --popover-foreground: #3e2c22;
+  --primary: #3e2c22;
+  --primary-foreground: #fffbf4;
+  --secondary: #f4e3a6;
+  --secondary-foreground: #3e2c22;
+  --muted: #efe6d6;
+  --muted-foreground: #8a7363;
+  --accent: #d6e5ee;
+  --accent-foreground: #33414a;
+  --destructive: #b5533c;
+  --border: #e9ddc9;
+  --input: #e9ddc9;
+  --ring: #c8b597;
+  --radius: 0.875rem;
+
+  --safe-top: calc(
+    max(env(safe-area-inset-top), var(--tg-safe-area-inset-top, 0px)) +
+      var(--tg-content-safe-area-inset-top, 0px)
+  );
+  --safe-bottom: max(env(safe-area-inset-bottom), var(--tg-safe-area-inset-bottom, 0px));
+  --nav-height: 68px;
+}
+
+@utility pt-safe {
+  padding-top: var(--safe-top);
+}
+
+@utility pb-safe {
+  padding-bottom: var(--safe-bottom);
+}
+
+@utility pb-nav {
+  padding-bottom: calc(var(--nav-height) + var(--safe-bottom));
+}
+
+@utility bottom-nav {
+  bottom: calc(var(--nav-height) + var(--safe-bottom));
+}
+
+html[data-tg] .tg-hide {
+  display: none;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-background text-foreground;
+    overscroll-behavior-y: none;
+  }
+}

@@ -31,13 +31,18 @@ const categoryImages: Record<string, string> = {
 }
 
 function slugify(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zа-яё0-9]+/gi, '-')
-    .replace(/^-+|-+$/g, '')
+  const slugs: Record<string, string> = {
+    'Куклы': 'dolls',
+    'Коляски для кукол': 'doll-strollers',
+    'Коляски': 'doll-strollers',
+    'Развивающие игрушки': 'educational',
+    'Музыкальные игрушки': 'musical',
+    'Мягкие игрушки': 'soft-toys',
+    'Ролевые игры': 'role-play',
+    'Творчество': 'creativity',
+  }
+
+  return slugs[value.trim()] || value.trim().toLowerCase().replace(/\s+/g, '-')
 }
 
 function parseCSV(text: string): string[][] {

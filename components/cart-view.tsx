@@ -2,25 +2,15 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useState } from 'react'
-import { Minus, Plus, ShoppingBag, Sparkles, Trash2 } from 'lucide-react'
+import { Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react'
 import { useCart } from '@/components/cart-provider'
 import { formatPrice, productsLabel } from '@/lib/format'
-import { haptic, hapticSuccess } from '@/lib/telegram'
+import { haptic } from '@/lib/telegram'
 
 export function CartView() {
-  const { lines, count, total, add, setQuantity, remove, clear } = useCart()
-  const [ordered, setOrdered] = useState(false)
+const { lines, count, total, add, setQuantity, remove } = useCart()
 
-  if (ordered) {
-    return (
-      <EmptyState
-        icon={<Sparkles className="size-7" strokeWidth={1.5} aria-hidden="true" />}
-        title="Спасибо за заказ!"
-        text="Мы свяжемся с вами в Telegram, чтобы подтвердить детали и доставку."
-      />
-    )
-  }
+  
 
   if (lines.length === 0) {
     return (
@@ -118,17 +108,13 @@ export function CartView() {
         </div>
       </section>
 
-      <button
-        type="button"
-        onClick={() => {
-          hapticSuccess()
-          clear()
-          setOrdered(true)
-        }}
-        className="flex h-15 w-full items-center justify-center rounded-full bg-primary text-base font-semibold text-primary-foreground shadow-[0_10px_30px_-12px_rgba(62,44,34,0.55)] transition active:scale-[0.98]"
-      >
-        Оформить заказ
-      </button>
+    <Link
+  href="/checkout"
+  onClick={() => haptic()}
+  className="flex h-15 w-full items-center justify-center rounded-full bg-primary text-base font-semibold text-primary-foreground shadow-[0_10px_30px_-12px_rgba(62,44,34,0.55)] transition active:scale-[0.98]"
+>
+  Оформить заказ
+</Link>
     </div>
   )
 }

@@ -1,17 +1,59 @@
 import { NextResponse } from 'next/server'
+import { getCatalog } from '@/lib/catalog'
+
+type CartItem = {
+  productId: string
+  quantity: number
+}
 
 export async function POST(request: Request) {
   try {
-    const { total } = await request.json()
+    const { items } = await request.json() as { items: CartItem[] }
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return NextResponse.json(
+        { error: 'Корзина пуста' },
+        { status: 400 }
+      )
+    }
+
+    const { products } = await getCatalog()
+
+    let total = 0
+
+    for (const item of items) {
+      const product = products.find(
+        (product) => product.id === item.productId
+      )
+
+      if (!product) {
+        return NextResponse.json(
+          { error: 'Один из товаров больше недоступен' },
+          { status: 400 }
+        )
+      }
+
+      const quantity = Math.floor(Number(item.quantity))
+
+      if (!Number.isInteger(quantity) || quantity < 1 || quantity > 20) {
+        return NextResponse.json(
+          { error: 'Некорректное количество товара' },
+          { status: 400 }
+        )
+      }
+
+      total += product.price * quantity
+    }
+
+    if (total <= 0) {
+      return NextResponse.json(
+        { error: 'Некорректная сумма заказа' },
+        { status: 400 }
+      )
+    }
 
     const token = process.env.TOCHKA_JWT?.trim()
     const customerCode = process.env.TOCHKA_CUSTOMER_CODE
-    console.log('TOCHKA JWT CHECK:', {
-  exists: Boolean(token),
-  length: token?.length,
-  parts: token?.split('.').length,
-  startsWithEy: token?.startsWith('ey'),
-})
 
     if (!token || !customerCode) {
       return NextResponse.json(
@@ -36,7 +78,7 @@ export async function POST(request: Request) {
             purpose: 'Заказ bébéhouse',
             paymentMode: ['sbp', 'card'],
             redirectUrl:
-  'https://bebehouse-6b95.vercel.app/payment-success',
+              'https://bebehouse-6b95.vercel.app/payment-success',
             failRedirectUrl:
               'https://bebehouse-6b95.vercel.app/checkout',
           },
@@ -45,10 +87,6 @@ export async function POST(request: Request) {
     )
 
     const data = await response.json()
-    console.log('TOCHKA RESPONSE:', {
-  status: response.status,
-  data,
-})
 
     if (!response.ok) {
       return NextResponse.json(
@@ -60,15 +98,14 @@ export async function POST(request: Request) {
     return NextResponse.json({
       paymentLink: data.Data.paymentLink,
       operationId: data.Data.operationId,
+      total,
     })
-} catch (error: any) {
-  return NextResponse.json(
-    {
-      error: error?.message,
-      cause: error?.cause?.message,
-      code: error?.cause?.code,
-    },
-    { status: 500 }
-  )
-}
+  } catch (error: any) {
+    return NextResponse.json(
+      {
+        error: error?.message || 'Не удалось создать оплату',
+      },
+      { status: 500 }
+    )
+  }
 }

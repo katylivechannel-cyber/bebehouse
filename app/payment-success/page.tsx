@@ -13,7 +13,6 @@ export default function PaymentSuccessPage() {
     const operationId = localStorage.getItem('tochkaOperationId')
 
     if (!operationId) {
-      clear()
       setPaymentStatus('failed')
       return
     }
@@ -30,7 +29,9 @@ export default function PaymentSuccessPage() {
       const data = await response.json()
 
       if (data.paid) {
-        const orderSent = localStorage.getItem('bebehouseOrderSent')
+  clear()
+
+  const orderSent = localStorage.getItem('bebehouseOrderSent')
 
 if (orderSent === operationId) {
   setPaymentStatus('paid')

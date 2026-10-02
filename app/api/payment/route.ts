@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getCatalog } from '@/lib/catalog'
+import { redis } from '@/lib/redis'
 
 type CartItem = {
   productId: string

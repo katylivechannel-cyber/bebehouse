@@ -3,14 +3,17 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { Check } from 'lucide-react'
+import { useCart } from '@/components/cart-provider'
 
 export default function PaymentSuccessPage() {
+  const { clear } = useCart()
   const [paymentStatus, setPaymentStatus] = useState<'checking' | 'paid' | 'failed'>('checking')
   useEffect(() => {
   const checkPayment = async () => {
     const operationId = localStorage.getItem('tochkaOperationId')
 
     if (!operationId) {
+      clear()
       setPaymentStatus('failed')
       return
     }

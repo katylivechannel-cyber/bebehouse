@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 export function ProductGallery({
   images,
@@ -12,10 +12,30 @@ export function ProductGallery({
 }) {
   const gallery = images.length > 0 ? images : ['/placeholder.svg']
   const [current, setCurrent] = useState(0)
+  const touchStartX = useRef<number | null>(null)
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="relative aspect-square overflow-hidden rounded-b-[2.5rem] bg-muted">
+    <div
+  className="relative aspect-square overflow-hidden rounded-b-[2.5rem] bg-muted"
+  onTouchStart={(e) => {
+    touchStartX.current = e.touches[0].clientX
+  }}
+  onTouchEnd={(e) => {
+    if (touchStartX.current === null) return
+
+    const difference = touchStartX.current - e.changedTouches[0].clientX
+
+    if (difference > 50) {
+      setCurrent((current + 1) % gallery.length)
+    }
+
+    if (difference < -50) {
+      setCurrent((current - 1 + gallery.length) % gallery.length)
+    }
+
+    touchStartX.current = null
+  }}
+>
         <Image
           src={gallery[current]}
           alt={`${name} — фото ${current + 1}`}

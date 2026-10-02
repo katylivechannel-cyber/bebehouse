@@ -48,6 +48,24 @@ if (savedOrder) {
   if (orderResponse.ok) {
   localStorage.setItem('bebehouseOrderSent', operationId)
 }
+  const emailSent = localStorage.getItem('bebehouseEmailSent')
+
+if (emailSent !== operationId && order.email) {
+  const emailResponse = await fetch('/api/send-email', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      email: order.email,
+      fullName: order.fullName,
+    }),
+  })
+
+  if (emailResponse.ok) {
+    localStorage.setItem('bebehouseEmailSent', operationId)
+  }
+}
 }
         setPaymentStatus('paid')
       } else {

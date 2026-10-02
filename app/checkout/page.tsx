@@ -9,7 +9,7 @@ import { formatPrice } from '@/lib/format'
 export default function CheckoutPage() {
   const { count, total } = useCart()
   const [fullName, setFullName] = useState('')
-  const [phone, setPhone] = useState('')
+ const [phone, setPhone] = useState('+7')
 const [cdekPoint, setCdekPoint] = useState('')
 
   return (
@@ -50,8 +50,22 @@ const [cdekPoint, setCdekPoint] = useState('')
   <input
     id="phone"
     type="tel"
+    inputMode="numeric"
     value={phone}
-    onChange={(e) => setPhone(e.target.value)}
+    onChange={(e) => {
+  const digits = e.target.value.replace(/\D/g, '').slice(0, 11)
+  let number = digits.startsWith('7') ? digits.slice(1) : digits
+
+  number = number.slice(0, 10)
+
+  let formatted = '+7'
+  if (number.length > 0) formatted += ' ' + number.slice(0, 3)
+  if (number.length > 3) formatted += ' ' + number.slice(3, 6)
+  if (number.length > 6) formatted += '-' + number.slice(6, 8)
+  if (number.length > 8) formatted += '-' + number.slice(8, 10)
+
+  setPhone(formatted)
+}}
     placeholder="+7 999 123-45-67"
     className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-base outline-none"
   />

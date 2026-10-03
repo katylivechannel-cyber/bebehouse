@@ -344,7 +344,7 @@ export default function CheckoutPage() {
                   type="text"
                   value={pointSearch}
                   onChange={(e) => setPointSearch(e.target.value)}
-                  placeholder="Введите улицу, например: Крауля"
+                  placeholder="Введите улицу или адрес"
                   autoComplete="off"
                   className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-base outline-none"
                 />

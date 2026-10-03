@@ -20,6 +20,20 @@ export type PackingResult = {
   estimated: boolean
 }
 
+type Dimensions = {
+  length: number
+  width: number
+  height: number
+}
+
+type Position = {
+  x: number
+  y: number
+  z: number
+}
+
+type PlacedItem = Position & Dimensions
+
 export const SHIPPING_BOXES: ShippingBox[] = [
   {
     id: 'box-27-16-5',
@@ -86,14 +100,9 @@ const DEFAULT_PRODUCT = {
   height: 10,
 }
 
-// Для нескольких разных групп товаров
-// не используем коробку на 100% математического объёма.
-const MAX_VOLUME_USAGE = 0.8
-
-// Пупырка примерно по 1 см с каждой стороны.
-// Эти 2 см добавляются к СТОПКЕ одинаковых товаров,
-// а не к каждому экземпляру отдельно.
-const PACKING_PADDING = 2
+// Оставляем примерно по 1 см между товаром
+// и стенками коробки на пупырку.
+const BOX_PADDING = 1
 
 function volume(
   length: number,
@@ -103,42 +112,7 @@ function volume(
   return length * width * height
 }
 
-function sortedDimensions(
-  length: number,
-  width: number,
-  height: number
-) {
-  return [length, width, height].sort((a, b) => a - b)
-}
-
-function itemFitsBox(
-  itemLength: number,
-  itemWidth: number,
-  itemHeight: number,
-  box: ShippingBox
-) {
-  const item = sortedDimensions(
-    itemLength,
-    itemWidth,
-    itemHeight
-  )
-
-  const boxDimensions = sortedDimensions(
-    box.length,
-    box.width,
-    box.height
-  )
-
-  return (
-    item[0] <= boxDimensions[0] &&
-    item[1] <= boxDimensions[1] &&
-    item[2] <= boxDimensions[2]
-  )
-}
-
-// Получаем реальные размеры одного товара.
-// Здесь пупырку пока НЕ добавляем.
-function getProductBaseData(product: Product) {
+function getProductData(product: Product) {
   const estimated =
     product.weight === null ||
     product.length === null ||
@@ -171,82 +145,175 @@ function getProductBaseData(product: Product) {
   }
 }
 
-// Собираем несколько одинаковых товаров в одну стопку.
-// Выбираем наиболее компактный вариант:
-// можно складывать по длине, ширине или высоте.
-function makeProductStack(
-  product: Product,
-  quantity: number
-) {
-  const data = getProductBaseData(product)
-
+function getOrientations(
+  item: Dimensions
+): Dimensions[] {
   const variants = [
-    {
-      length: data.length * quantity,
-      width: data.width,
-      height: data.height,
-    },
-    {
-      length: data.length,
-      width: data.width * quantity,
-      height: data.height,
-    },
-    {
-      length: data.length,
-      width: data.width,
-      height: data.height * quantity,
-    },
+    [item.length, item.width, item.height],
+    [item.length, item.height, item.width],
+    [item.width, item.length, item.height],
+    [item.width, item.height, item.length],
+    [item.height, item.length, item.width],
+    [item.height, item.width, item.length],
   ]
 
-  // Выбираем вариант с наименьшей самой длинной стороной.
-  // При равенстве — с меньшей второй стороной.
-  variants.sort((a, b) => {
-    const aDims = sortedDimensions(
-      a.length,
-      a.width,
-      a.height
-    ).reverse()
+  const unique = new Map<string, Dimensions>()
 
-    const bDims = sortedDimensions(
-      b.length,
-      b.width,
-      b.height
-    ).reverse()
+  for (const [length, width, height] of variants) {
+    const key = `${length}-${width}-${height}`
 
-    if (aDims[0] !== bDims[0]) {
-      return aDims[0] - bDims[0]
+    unique.set(key, {
+      length,
+      width,
+      height,
+    })
+  }
+
+  return [...unique.values()]
+}
+
+function overlaps(
+  a: PlacedItem,
+  b: PlacedItem
+) {
+  return !(
+    a.x + a.length <= b.x ||
+    b.x + b.length <= a.x ||
+    a.y + a.width <= b.y ||
+    b.y + b.width <= a.y ||
+    a.z + a.height <= b.z ||
+    b.z + b.height <= a.z
+  )
+}
+
+function fitsInsideBox(
+  item: PlacedItem,
+  box: Dimensions
+) {
+  return (
+    item.x >= 0 &&
+    item.y >= 0 &&
+    item.z >= 0 &&
+    item.x + item.length <= box.length &&
+    item.y + item.width <= box.width &&
+    item.z + item.height <= box.height
+  )
+}
+
+function tryPack(
+  products: Dimensions[],
+  box: ShippingBox
+) {
+  // Уменьшаем полезное пространство коробки
+  // на 1 см с каждой стороны под упаковочный материал.
+  const usableBox: Dimensions = {
+    length: Math.max(
+      0,
+      box.length - BOX_PADDING * 2
+    ),
+    width: Math.max(
+      0,
+      box.width - BOX_PADDING * 2
+    ),
+    height: Math.max(
+      0,
+      box.height - BOX_PADDING * 2
+    ),
+  }
+
+  const sortedProducts = [...products].sort(
+    (a, b) =>
+      volume(b.length, b.width, b.height) -
+      volume(a.length, a.width, a.height)
+  )
+
+  const placed: PlacedItem[] = []
+
+  for (const product of sortedProducts) {
+    const positions: Position[] = [
+      {
+        x: 0,
+        y: 0,
+        z: 0,
+      },
+    ]
+
+    // После каждого уже размещённого предмета
+    // пробуем свободные позиции справа, спереди и сверху.
+    for (const item of placed) {
+      positions.push(
+        {
+          x: item.x + item.length,
+          y: item.y,
+          z: item.z,
+        },
+        {
+          x: item.x,
+          y: item.y + item.width,
+          z: item.z,
+        },
+        {
+          x: item.x,
+          y: item.y,
+          z: item.z + item.height,
+        }
+      )
     }
 
-    return aDims[1] - bDims[1]
-  })
+    let found: PlacedItem | null = null
 
-  const best = variants[0]
+    for (const position of positions) {
+      for (const orientation of getOrientations(
+        product
+      )) {
+        const candidate: PlacedItem = {
+          ...position,
+          ...orientation,
+        }
 
-  return {
-    // Пупырку добавляем один раз вокруг всей стопки.
-    length: best.length + PACKING_PADDING,
-    width: best.width + PACKING_PADDING,
-    height: best.height + PACKING_PADDING,
+        if (
+          !fitsInsideBox(candidate, usableBox)
+        ) {
+          continue
+        }
 
-    weight: data.weight * quantity,
-    estimated: data.estimated,
+        const collision = placed.some(
+          (other) =>
+            overlaps(candidate, other)
+        )
+
+        if (!collision) {
+          found = candidate
+          break
+        }
+      }
+
+      if (found) {
+        break
+      }
+    }
+
+    if (!found) {
+      return false
+    }
+
+    placed.push(found)
   }
+
+  return true
 }
 
 export function packOrder(
   items: PackingItem[]
 ): PackingResult | null {
-  if (!items.length) return null
+  if (!items.length) {
+    return null
+  }
 
-  let totalProductVolume = 0
+  const products: Dimensions[] = []
+
   let totalProductWeight = 0
   let estimated = false
-
-  const stacks: {
-    length: number
-    width: number
-    height: number
-  }[] = []
 
   for (const item of items) {
     if (
@@ -257,31 +324,30 @@ export function packOrder(
       return null
     }
 
-    const stack = makeProductStack(
-      item.product,
-      item.quantity
-    )
+    const data =
+      getProductData(item.product)
 
-    if (stack.estimated) {
+    if (data.estimated) {
       estimated = true
     }
 
-    totalProductWeight += stack.weight
+    totalProductWeight +=
+      data.weight * item.quantity
 
-    totalProductVolume += volume(
-      stack.length,
-      stack.width,
-      stack.height
-    )
-
-    stacks.push({
-      length: stack.length,
-      width: stack.width,
-      height: stack.height,
-    })
+    for (
+      let i = 0;
+      i < item.quantity;
+      i++
+    ) {
+      products.push({
+        length: data.length,
+        width: data.width,
+        height: data.height,
+      })
+    }
   }
 
-  // От самой маленькой коробки к самой большой.
+  // Сначала самые маленькие коробки.
   const boxes = [...SHIPPING_BOXES].sort(
     (a, b) =>
       volume(
@@ -297,48 +363,7 @@ export function packOrder(
   )
 
   for (const box of boxes) {
-    // Каждая стопка должна физически помещаться
-    // в коробку с учётом поворота.
-    const everyStackFits = stacks.every(
-      (stack) =>
-        itemFitsBox(
-          stack.length,
-          stack.width,
-          stack.height,
-          box
-        )
-    )
-
-    if (!everyStackFits) {
-      continue
-    }
-
-    const boxVolume = volume(
-      box.length,
-      box.width,
-      box.height
-    )
-
-    // Если в заказе только одна группа одинакового товара,
-    // достаточно того, что стопка физически помещается.
-    if (stacks.length === 1) {
-      return {
-        box,
-        weight:
-          totalProductWeight +
-          box.emptyWeight,
-        estimated,
-      }
-    }
-
-    // Если товаров разных несколько —
-    // оставляем дополнительный запас на укладку.
-    const usableVolume =
-      boxVolume * MAX_VOLUME_USAGE
-
-    if (
-      totalProductVolume <= usableVolume
-    ) {
+    if (tryPack(products, box)) {
       return {
         box,
         weight:
@@ -349,5 +374,7 @@ export function packOrder(
     }
   }
 
+  // Если ничего не подошло — заказ всё равно
+  // можно оформить. Доставку рассчитаем после упаковки.
   return null
 }

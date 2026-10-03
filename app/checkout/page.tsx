@@ -35,28 +35,25 @@ export default function CheckoutPage() {
   const [city, setCity] = useState('')
   const [cityCode, setCityCode] = useState<number | null>(null)
   const [cityResults, setCityResults] = useState<CdekCity[]>([])
-  const [isSearchingCities, setIsSearchingCities] = useState(false)
 
   const [points, setPoints] = useState<CdekPoint[]>([])
   const [cdekPoint, setCdekPoint] = useState('')
   const [cdekPointCode, setCdekPointCode] = useState('')
   const [pointSearch, setPointSearch] = useState('')
   const [isLoadingPoints, setIsLoadingPoints] = useState(false)
+  const [isChoosingPoint, setIsChoosingPoint] = useState(false)
 
   useEffect(() => {
     const query = city.trim()
 
     if (cityCode !== null || query.length < 2) {
       setCityResults([])
-      setIsSearchingCities(false)
       return
     }
 
     const controller = new AbortController()
 
     const timer = setTimeout(() => {
-      setIsSearchingCities(true)
-
       fetch(
         `/api/cdek/cities?city=${encodeURIComponent(query)}`,
         {
@@ -77,12 +74,7 @@ export default function CheckoutPage() {
             setCityResults([])
           }
         })
-        .finally(() => {
-          if (!controller.signal.aborted) {
-            setIsSearchingCities(false)
-          }
-        })
-    }, 500)
+    }, 350)
 
     return () => {
       clearTimeout(timer)
@@ -99,12 +91,16 @@ export default function CheckoutPage() {
     setCdekPoint('')
     setCdekPointCode('')
     setPointSearch('')
+    setIsChoosingPoint(true)
 
     try {
       setIsLoadingPoints(true)
 
       const response = await fetch(
-        `/api/cdek/points?cityCode=${selectedCity.code}`
+        `/api/cdek/points?cityCode=${selectedCity.code}`,
+        {
+          cache: 'no-store',
+        }
       )
 
       const data = await response.json()
@@ -128,7 +124,8 @@ export default function CheckoutPage() {
 
     return (
       point.address.toLowerCase().includes(query) ||
-      point.name.toLowerCase().includes(query)
+      point.name.toLowerCase().includes(query) ||
+      point.code.toLowerCase().includes(query)
     )
   })
 
@@ -252,17 +249,12 @@ export default function CheckoutPage() {
               setCdekPoint('')
               setCdekPointCode('')
               setPointSearch('')
+              setIsChoosingPoint(false)
             }}
-            placeholder="Начните вводить город"
+            placeholder="Например: Екатеринбург"
             autoComplete="off"
             className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-base outline-none"
           />
-
-          {isSearchingCities && (
-            <p className="px-1 text-xs text-muted-foreground">
-              Ищем город...
-            </p>
-          )}
 
           {cityResults.length > 0 && (
             <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-y-auto rounded-2xl border border-border bg-background p-1 shadow-lg">
@@ -290,13 +282,34 @@ export default function CheckoutPage() {
 
         {cityCode !== null && (
           <div className="flex flex-col gap-2">
-            <label htmlFor="pointSearch" className="text-sm font-medium">
+            <label className="text-sm font-medium">
               ПВЗ СДЭК
             </label>
 
             {isLoadingPoints ? (
               <div className="rounded-2xl bg-background p-4 text-sm text-muted-foreground">
                 Загружаем пункты СДЭК...
+              </div>
+            ) : cdekPoint && !isChoosingPoint ? (
+              <div className="rounded-2xl border border-primary bg-background p-4">
+                <p className="text-xs text-muted-foreground">
+                  Выбранный ПВЗ
+                </p>
+
+                <p className="mt-1 text-sm font-medium">
+                  {cdekPoint}
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsChoosingPoint(true)
+                    setPointSearch('')
+                  }}
+                  className="mt-3 text-sm font-medium underline underline-offset-4"
+                >
+                  Изменить ПВЗ
+                </button>
               </div>
             ) : points.length > 0 ? (
               <>
@@ -305,57 +318,48 @@ export default function CheckoutPage() {
                   type="text"
                   value={pointSearch}
                   onChange={(e) => setPointSearch(e.target.value)}
-                  placeholder="Поиск по улице или адресу"
+                  placeholder="Введите улицу, например: Крауля"
                   autoComplete="off"
                   className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-base outline-none"
                 />
 
-                {cdekPoint && (
-                  <div className="rounded-2xl border border-primary bg-background p-4">
-                    <p className="text-xs text-muted-foreground">
-                      Выбранный ПВЗ
-                    </p>
+                {pointSearch.trim().length === 0 ? (
+                  <p className="px-1 text-xs text-muted-foreground">
+                    Начните вводить улицу или адрес ПВЗ
+                  </p>
+                ) : (
+                  <div className="max-h-72 overflow-y-auto rounded-2xl border border-border bg-background">
+                    {filteredPoints.length > 0 ? (
+                      filteredPoints.map((point) => (
+                        <button
+                          key={point.code}
+                          type="button"
+                          onClick={() => {
+                            setCdekPoint(point.address)
+                            setCdekPointCode(point.code)
+                            setPointSearch('')
+                            setIsChoosingPoint(false)
+                          }}
+                          className="flex w-full flex-col border-b border-border px-4 py-3 text-left last:border-b-0"
+                        >
+                          <span className="text-sm font-medium">
+                            {point.address}
+                          </span>
 
-                    <p className="mt-1 text-sm font-medium">
-                      {cdekPoint}
-                    </p>
+                          {point.workTime && (
+                            <span className="mt-1 text-xs text-muted-foreground">
+                              {point.workTime}
+                            </span>
+                          )}
+                        </button>
+                      ))
+                    ) : (
+                      <p className="p-4 text-sm text-muted-foreground">
+                        ПВЗ по этому адресу не найден
+                      </p>
+                    )}
                   </div>
                 )}
-
-                <div className="max-h-72 overflow-y-auto rounded-2xl border border-border bg-background">
-                  {filteredPoints.length > 0 ? (
-                    filteredPoints.map((point) => (
-                      <button
-                        key={point.code}
-                        type="button"
-                        onClick={() => {
-                          setCdekPoint(point.address)
-                          setCdekPointCode(point.code)
-                          setPointSearch('')
-                        }}
-                        className={`flex w-full flex-col border-b border-border px-4 py-3 text-left last:border-b-0 ${
-                          cdekPointCode === point.code
-                            ? 'bg-card'
-                            : ''
-                        }`}
-                      >
-                        <span className="text-sm font-medium">
-                          {point.address}
-                        </span>
-
-                        {point.workTime && (
-                          <span className="mt-1 text-xs text-muted-foreground">
-                            {point.workTime}
-                          </span>
-                        )}
-                      </button>
-                    ))
-                  ) : (
-                    <p className="p-4 text-sm text-muted-foreground">
-                      ПВЗ по этому адресу не найден
-                    </p>
-                  )}
-                </div>
               </>
             ) : (
               <div className="rounded-2xl bg-background p-4 text-sm text-muted-foreground">

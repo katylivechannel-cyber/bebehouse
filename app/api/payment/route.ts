@@ -167,6 +167,42 @@ export async function POST(request: Request) {
       | null = null
 
     /*
+      УПАКОВКА
+
+      Считаем её для обоих способов доставки,
+      чтобы после оплаты у нас уже были
+      сохранены коробка, размеры и вес.
+    */
+    const packing = packOrder(
+      validatedItems.map((item) => ({
+        product: item.product,
+        quantity: item.quantity,
+      }))
+    )
+
+    const useFallbackXL =
+      !packing || packing.estimated
+
+    const shipping = useFallbackXL
+      ? FALLBACK_XL
+      : {
+          length: packing.box.length,
+          width: packing.box.width,
+          height: packing.box.height,
+          weight: packing.weight,
+          boxName: packing.box.name,
+        }
+
+    packingInfo = {
+      box: shipping.boxName,
+      length: shipping.length,
+      width: shipping.width,
+      height: shipping.height,
+      weight: shipping.weight,
+      fallbackXL: useFallbackXL,
+    }
+
+    /*
       ЯНДЕКС ДОСТАВКА
 
       Стоимость рассчитываем повторно прямо
@@ -187,26 +223,6 @@ export async function POST(request: Request) {
           { status: 500 }
         )
       }
-
-      const packing = packOrder(
-        validatedItems.map((item) => ({
-          product: item.product,
-          quantity: item.quantity,
-        }))
-      )
-
-      const useFallbackXL =
-        !packing || packing.estimated
-
-      const shipping = useFallbackXL
-        ? FALLBACK_XL
-        : {
-            length: packing.box.length,
-            width: packing.box.width,
-            height: packing.box.height,
-            weight: packing.weight,
-            boxName: packing.box.name,
-          }
 
       /*
         Реальная стоимость товаров
@@ -480,10 +496,7 @@ export async function POST(request: Request) {
             ? productsTotal
             : null,
 
-        packing:
-          deliveryMethod === 'yandex'
-            ? packingInfo
-            : null,
+        packing: packingInfo,
 
         total,
 

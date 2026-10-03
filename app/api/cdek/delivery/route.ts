@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getProducts } from '@/lib/catalog'
+import { getCatalog } from '@/lib/catalog'
 import { packOrder } from '@/lib/packing'
 
 export async function POST(request: NextRequest) {
@@ -29,7 +29,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const products = await getProducts()
+    const catalog = await getCatalog()
+    const products = catalog.products
 
     const packingItems = []
 
@@ -73,8 +74,8 @@ export async function POST(request: NextRequest) {
 
     const packing = packOrder(packingItems)
 
-    // Если не можем надёжно подобрать коробку,
-    // цену покупателю не придумываем.
+    // Если упаковщик не смог подобрать коробку,
+    // не придумываем стоимость доставки.
     if (!packing) {
       return NextResponse.json({
         success: true,

@@ -99,8 +99,26 @@ export async function fulfillOrder(operationId: string) {
           from: 'bébéhouse <onboarding@resend.dev>',
           to: [order.email],
           subject: 'Спасибо за заказ в bébéhouse 🤍',
-          <p><strong>Заказ №${order.orderNumber}</strong></p>
           html: `
+          html: `
+  <div style="font-family: Arial, sans-serif; color: #411D0A; line-height: 1.6;">
+    <h2>Спасибо за заказ, ${order.fullName}! 🤍</h2>
+
+    <p><strong>Заказ №${order.orderNumber}</strong></p>
+
+    <p>Оплата прошла успешно.</p>
+
+    <p>
+      Мы передадим ваш заказ в СДЭК в течение 1–2 дней.
+      Как только посылка будет отправлена, трек-номер придёт на эту электронную почту.
+    </p>
+
+    <p>
+      С любовью,<br>
+      bébéhouse
+    </p>
+  </div>
+`,
             <div style="font-family: Arial, sans-serif; color: #411D0A; line-height: 1.6;">
               <h2>Спасибо за заказ, ${order.fullName}! 🤍</h2>
 

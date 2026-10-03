@@ -157,6 +157,7 @@ export default function CheckoutPage() {
           cityData.cities[0] as CdekCity
 
         setCityCode(foundCity.code)
+        setCity(foundCity.city)
         setCityStatus('found')
 
         /*
@@ -938,6 +939,19 @@ export default function CheckoutPage() {
                     </span>
                   </div>
 
+                  {cdekDelivery.periodMin !== undefined &&
+                    cdekDelivery.periodMax !== undefined && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Примерный срок доставки:{' '}
+                        {cdekDelivery.periodMin + 1 ===
+                        cdekDelivery.periodMax + 1
+                          ? `${cdekDelivery.periodMin + 1} дн.`
+                          : `${cdekDelivery.periodMin + 1}–${
+                              cdekDelivery.periodMax + 1
+                            } дн.`}
+                      </p>
+                    )}
+
                   <p className="mt-1 text-xs text-muted-foreground">
                     Оплата доставки при получении.
                   </p>
@@ -978,6 +992,14 @@ export default function CheckoutPage() {
                       )}
                     </span>
                   </div>
+
+                  {yandexDelivery.deliveryDays !== undefined &&
+                    yandexDelivery.deliveryDays !== null && (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Примерный срок доставки:{' '}
+                        {yandexDelivery.deliveryDays + 1} дн.
+                      </p>
+                    )}
 
                   <p className="mt-1 text-xs text-muted-foreground">
                     Оплачивается сразу вместе с заказом.

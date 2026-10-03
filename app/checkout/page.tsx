@@ -25,6 +25,12 @@ type CdekPoint = {
   haveCash: boolean | null
 }
 
+type DeliveryInfo = {
+  price: number
+  periodMin?: number
+  periodMax?: number
+}
+
 export default function CheckoutPage() {
   const { lines, count, total } = useCart()
 
@@ -44,6 +50,11 @@ export default function CheckoutPage() {
   const [pointSearch, setPointSearch] = useState('')
   const [isLoadingPoints, setIsLoadingPoints] = useState(false)
   const [isChoosingPoint, setIsChoosingPoint] = useState(false)
+
+  const [delivery, setDelivery] = useState<DeliveryInfo | null>(null)
+  const [deliveryCalculated, setDeliveryCalculated] =
+    useState<boolean | null>(null)
+  const [isLoadingDelivery, setIsLoadingDelivery] = useState(false)
 
   useEffect(() => {
     const query = city.trim()
@@ -146,6 +157,82 @@ export default function CheckoutPage() {
       controller.abort()
     }
   }, [city])
+
+  useEffect(() => {
+    if (cityCode === null || lines.length === 0) {
+      setDelivery(null)
+      setDeliveryCalculated(null)
+      setIsLoadingDelivery(false)
+      return
+    }
+
+    const controller = new AbortController()
+
+    async function calculateDelivery() {
+      try {
+        setIsLoadingDelivery(true)
+        setDelivery(null)
+        setDeliveryCalculated(null)
+
+        const response = await fetch('/api/cdek/delivery', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            cityCode,
+            items: lines.map((line) => ({
+              productId: line.product.id,
+              quantity: line.quantity,
+            })),
+          }),
+          signal: controller.signal,
+          cache: 'no-store',
+        })
+
+        const data = await response.json()
+
+        if (controller.signal.aborted) return
+
+        if (
+          response.ok &&
+          data.success &&
+          data.calculated &&
+          data.delivery
+        ) {
+          setDelivery({
+            price: data.delivery.price,
+            periodMin: data.delivery.periodMin,
+            periodMax: data.delivery.periodMax,
+          })
+          setDeliveryCalculated(true)
+        } else {
+          setDelivery(null)
+          setDeliveryCalculated(false)
+        }
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.name === 'AbortError'
+        ) {
+          return
+        }
+
+        setDelivery(null)
+        setDeliveryCalculated(false)
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoadingDelivery(false)
+        }
+      }
+    }
+
+    calculateDelivery()
+
+    return () => {
+      controller.abort()
+    }
+  }, [cityCode, lines])
 
   const filteredPoints = points.filter((point) => {
     const query = pointSearch.trim().toLowerCase()
@@ -281,6 +368,9 @@ export default function CheckoutPage() {
               setCdekPointCode('')
               setPointSearch('')
               setIsChoosingPoint(false)
+
+              setDelivery(null)
+              setDeliveryCalculated(null)
             }}
             placeholder="Например: Екатеринбург"
             autoComplete="address-level2"
@@ -391,9 +481,45 @@ export default function CheckoutPage() {
           Товаров: {count}
         </p>
 
-        <div className="mt-2 flex items-center justify-between">
+        {cityCode !== null && (
+          <div className="mt-4 border-t border-border pt-4">
+            {isLoadingDelivery ? (
+              <p className="text-sm text-muted-foreground">
+                Рассчитываем доставку СДЭК...
+              </p>
+            ) : deliveryCalculated && delivery ? (
+              <>
+                <div className="flex items-center justify-between gap-4">
+                  <span className="text-sm">
+                    Доставка СДЭК до ПВЗ
+                  </span>
+
+                  <span className="shrink-0 text-sm font-semibold">
+                    {formatPrice(delivery.price)}
+                  </span>
+                </div>
+
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Оплата доставки при получении.
+                </p>
+              </>
+            ) : deliveryCalculated === false ? (
+              <>
+                <p className="text-sm font-medium">
+                  Доставка СДЭК — оплата при получении
+                </p>
+
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Стоимость доставки будет рассчитана после упаковки заказа.
+                </p>
+              </>
+            ) : null}
+          </div>
+        )}
+
+        <div className="mt-4 flex items-center justify-between">
           <span className="font-serif text-xl font-semibold">
-            Итого
+            Итого к оплате
           </span>
 
           <span className="text-xl font-semibold">

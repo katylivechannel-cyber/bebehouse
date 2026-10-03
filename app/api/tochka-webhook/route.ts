@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createPublicKey, verify } from 'crypto'
+import { fulfillOrder } from '@/lib/fulfill-order'
 
 function base64UrlDecode(value: string) {
   return Buffer.from(
@@ -58,9 +59,26 @@ export async function POST(request: Request) {
       base64UrlDecode(payloadPart).toString('utf8')
     )
 
-    console.log('TOCHKA WEBHOOK VERIFIED:', payload)
+   console.log('TOCHKA WEBHOOK VERIFIED:', payload)
 
-    return NextResponse.json({ ok: true })
+const operationId =
+  payload?.Data?.operationId ??
+  payload?.Data?.Operation?.[0]?.operationId
+
+const paymentStatus =
+  payload?.Data?.status ??
+  payload?.Data?.Operation?.[0]?.status
+
+console.log('TOCHKA WEBHOOK PAYMENT:', {
+  operationId,
+  paymentStatus,
+})
+
+if (operationId && paymentStatus === 'APPROVED') {
+  await fulfillOrder(operationId)
+}
+
+return NextResponse.json({ ok: true })
   } catch (error) {
     console.error('TOCHKA WEBHOOK ERROR:', error)
 

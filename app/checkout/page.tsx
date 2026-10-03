@@ -669,7 +669,7 @@ export default function CheckoutPage() {
                   </span>
 
                   <span className="mt-1 block text-xs text-muted-foreground">
-                    Оплата при получении
+                    Оплата доставки при получении
                   </span>
                 </button>
 
@@ -689,7 +689,7 @@ export default function CheckoutPage() {
                   </span>
 
                   <span className="mt-1 block text-xs text-muted-foreground">
-                    Оплата сейчас
+                    Оплата доставки сразу
                   </span>
                 </button>
               </div>
@@ -980,7 +980,7 @@ export default function CheckoutPage() {
                   </div>
 
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Оплачивается сейчас вместе с заказом.
+                    Оплачивается сразу вместе с заказом.
                   </p>
                 </>
               ) : (

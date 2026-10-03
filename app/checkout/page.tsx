@@ -34,7 +34,9 @@ export default function CheckoutPage() {
 
   const [city, setCity] = useState('')
   const [cityCode, setCityCode] = useState<number | null>(null)
-  const [cityResults, setCityResults] = useState<CdekCity[]>([])
+  const [cityStatus, setCityStatus] = useState<
+    'idle' | 'checking' | 'found' | 'not-found'
+  >('idle')
 
   const [points, setPoints] = useState<CdekPoint[]>([])
   const [cdekPoint, setCdekPoint] = useState('')
@@ -46,76 +48,104 @@ export default function CheckoutPage() {
   useEffect(() => {
     const query = city.trim()
 
-    if (cityCode !== null || query.length < 2) {
-      setCityResults([])
+    if (query.length < 2) {
+      setCityStatus('idle')
+      setCityCode(null)
       return
     }
 
     const controller = new AbortController()
 
-    const timer = setTimeout(() => {
-      fetch(
-        `/api/cdek/cities?city=${encodeURIComponent(query)}`,
-        {
-          signal: controller.signal,
-          cache: 'no-store',
+    const timer = setTimeout(async () => {
+      try {
+        setCityStatus('checking')
+
+        const response = await fetch(
+          `/api/cdek/cities?city=${encodeURIComponent(query)}`,
+          {
+            signal: controller.signal,
+            cache: 'no-store',
+          }
+        )
+
+        const data = await response.json()
+
+        if (
+          data.success &&
+          Array.isArray(data.cities) &&
+          data.cities.length > 0
+        ) {
+          const foundCity = data.cities[0] as CdekCity
+
+          setCityCode(foundCity.code)
+          setCityStatus('found')
+
+          setPoints([])
+          setCdekPoint('')
+          setCdekPointCode('')
+          setPointSearch('')
+          setIsChoosingPoint(true)
+
+          try {
+            setIsLoadingPoints(true)
+
+            const pointsResponse = await fetch(
+              `/api/cdek/points?cityCode=${foundCity.code}`,
+              {
+                signal: controller.signal,
+                cache: 'no-store',
+              }
+            )
+
+            const pointsData = await pointsResponse.json()
+
+            if (
+              pointsData.success &&
+              Array.isArray(pointsData.points)
+            ) {
+              setPoints(pointsData.points)
+            } else {
+              setPoints([])
+            }
+          } finally {
+            if (!controller.signal.aborted) {
+              setIsLoadingPoints(false)
+            }
+          }
+        } else {
+          setCityCode(null)
+          setCityStatus('not-found')
+
+          setPoints([])
+          setCdekPoint('')
+          setCdekPointCode('')
+          setPointSearch('')
+          setIsChoosingPoint(false)
         }
-      )
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.success && Array.isArray(data.cities)) {
-            setCityResults(data.cities)
-          } else {
-            setCityResults([])
-          }
-        })
-        .catch((error) => {
-          if (error.name !== 'AbortError') {
-            setCityResults([])
-          }
-        })
-    }, 350)
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.name === 'AbortError'
+        ) {
+          return
+        }
+
+        setCityCode(null)
+        setCityStatus('not-found')
+        setPoints([])
+        setCdekPoint('')
+        setCdekPointCode('')
+        setPointSearch('')
+        setIsChoosingPoint(false)
+        setIsLoadingPoints(false)
+      }
+    }, 900)
 
     return () => {
       clearTimeout(timer)
       controller.abort()
     }
-  }, [city, cityCode])
-
-  async function selectCity(selectedCity: CdekCity) {
-    setCity(selectedCity.city)
-    setCityCode(selectedCity.code)
-    setCityResults([])
-
-    setPoints([])
-    setCdekPoint('')
-    setCdekPointCode('')
-    setPointSearch('')
-    setIsChoosingPoint(true)
-
-    try {
-      setIsLoadingPoints(true)
-
-      const response = await fetch(
-        `/api/cdek/points?cityCode=${selectedCity.code}`,
-        {
-          cache: 'no-store',
-        }
-      )
-
-      const data = await response.json()
-
-      if (data.success && Array.isArray(data.points)) {
-        setPoints(data.points)
-      } else {
-        setPoints([])
-      }
-    } catch {
-      setPoints([])
-    } finally {
-      setIsLoadingPoints(false)
-    }
-  }
+  }, [city])
 
   const filteredPoints = points.filter((point) => {
     const query = pointSearch.trim().toLowerCase()
@@ -232,7 +262,7 @@ export default function CheckoutPage() {
           />
         </div>
 
-        <div className="relative flex flex-col gap-2">
+        <div className="flex flex-col gap-2">
           <label htmlFor="city" className="text-sm font-medium">
             Город
           </label>
@@ -244,6 +274,7 @@ export default function CheckoutPage() {
             onChange={(e) => {
               setCity(e.target.value)
               setCityCode(null)
+              setCityStatus('idle')
 
               setPoints([])
               setCdekPoint('')
@@ -252,31 +283,26 @@ export default function CheckoutPage() {
               setIsChoosingPoint(false)
             }}
             placeholder="Например: Екатеринбург"
-            autoComplete="off"
+            autoComplete="address-level2"
             className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-base outline-none"
           />
 
-          {cityResults.length > 0 && (
-            <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-y-auto rounded-2xl border border-border bg-background p-1 shadow-lg">
-              {cityResults.map((item) => (
-                <button
-                  key={item.code}
-                  type="button"
-                  onClick={() => selectCity(item)}
-                  className="flex w-full flex-col rounded-xl px-3 py-3 text-left hover:bg-card"
-                >
-                  <span className="font-medium">
-                    {item.city}
-                  </span>
+          {cityStatus === 'checking' && (
+            <p className="px-1 text-xs text-muted-foreground">
+              Проверяем город...
+            </p>
+          )}
 
-                  {item.region && (
-                    <span className="text-xs text-muted-foreground">
-                      {item.region}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
+          {cityStatus === 'found' && (
+            <p className="px-1 text-xs font-medium">
+              ✓ Город найден
+            </p>
+          )}
+
+          {cityStatus === 'not-found' && (
+            <p className="px-1 text-xs text-muted-foreground">
+              Не удалось найти город. Проверьте название.
+            </p>
           )}
         </div>
 

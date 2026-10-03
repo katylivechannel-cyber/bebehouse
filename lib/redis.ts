@@ -43,4 +43,8 @@ export const redis = {
 
     return JSON.parse(result) as T
   },
+
+  async incr(key: string): Promise<number> {
+    return command<number>(['INCR', key])
+  },
 }

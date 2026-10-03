@@ -24,6 +24,9 @@ type Dimensions = {
   length: number
   width: number
   height: number
+}
+
+type ProductForPacking = Dimensions & {
   flexible: boolean
 }
 
@@ -33,11 +36,7 @@ type Position = {
   z: number
 }
 
-type PlacedItem = Position & {
-  length: number
-  width: number
-  height: number
-}
+type PlacedItem = Position & Dimensions
 
 export const SHIPPING_BOXES: ShippingBox[] = [
   {
@@ -105,12 +104,12 @@ const DEFAULT_PRODUCT = {
   height: 10,
 }
 
-// Оставляем примерно по 1 см от стенок
-// коробки под пупырчатую плёнку.
+// Оставляем примерно по 1 см от стенок коробки
+// под пупырчатую плёнку.
 const BOX_PADDING = 1
 
-// Для гибких товаров разрешаем запасную
-// проверку по объёму, максимум 80% коробки.
+// Только для гибких товаров (например кукол)
+// разрешаем запасную проверку по объёму.
 const MAX_VOLUME_USAGE = 0.8
 
 function volume(
@@ -149,8 +148,8 @@ function getProductData(product: Product) {
 
   let flexible = false
 
-  // У 35-см кукол мягкие ноги.
-  // Их можно подогнуть при упаковке.
+  // У 35-см кукол мягкие ноги,
+  // поэтому их можно подогнуть.
   if (product.packingGroup === 'кукла35') {
     length = 25
     width = 16
@@ -164,14 +163,14 @@ function getProductData(product: Product) {
     length,
     width,
     height,
-    estimated,
     flexible,
+    estimated,
   }
 }
 
 function getOrientations(
   item: Dimensions
-) {
+): Dimensions[] {
   const variants = [
     [item.length, item.width, item.height],
     [item.length, item.height, item.width],
@@ -181,18 +180,10 @@ function getOrientations(
     [item.height, item.width, item.length],
   ]
 
-  const unique = new Map<
-    string,
-    {
-      length: number
-      width: number
-      height: number
-    }
-  >()
+  const unique = new Map<string, Dimensions>()
 
   for (const [length, width, height] of variants) {
-    const key =
-      `${length}-${width}-${height}`
+    const key = `${length}-${width}-${height}`
 
     unique.set(key, {
       length,
@@ -220,11 +211,7 @@ function overlaps(
 
 function fitsInsideBox(
   item: PlacedItem,
-  box: {
-    length: number
-    width: number
-    height: number
-  }
+  box: Dimensions
 ) {
   return (
     item.x >= 0 &&
@@ -236,11 +223,27 @@ function fitsInsideBox(
   )
 }
 
-function tryExactPack(
-  products: Dimensions[],
+function uniquePositions(
+  positions: Position[]
+) {
+  const map = new Map<string, Position>()
+
+  for (const position of positions) {
+    const key =
+      `${position.x}-${position.y}-${position.z}`
+
+    map.set(key, position)
+  }
+
+  return [...map.values()]
+}
+
+// Пробуем разместить товары в одном конкретном порядке.
+function tryPackInOrder(
+  products: ProductForPacking[],
   box: ShippingBox
 ) {
-  const usableBox = {
+  const usableBox: Dimensions = {
     length: Math.max(
       0,
       box.length - BOX_PADDING * 2
@@ -255,24 +258,10 @@ function tryExactPack(
     ),
   }
 
-  const sortedProducts = [...products].sort(
-    (a, b) =>
-      volume(
-        b.length,
-        b.width,
-        b.height
-      ) -
-      volume(
-        a.length,
-        a.width,
-        a.height
-      )
-  )
-
   const placed: PlacedItem[] = []
 
-  for (const product of sortedProducts) {
-    const positions: Position[] = [
+  for (const product of products) {
+    let positions: Position[] = [
       {
         x: 0,
         y: 0,
@@ -280,6 +269,8 @@ function tryExactPack(
       },
     ]
 
+    // Пробуем позиции около всех граней
+    // уже размещённых товаров.
     for (const item of placed) {
       positions.push(
         {
@@ -296,9 +287,34 @@ function tryExactPack(
           x: item.x,
           y: item.y,
           z: item.z + item.height,
+        },
+        {
+          x: item.x + item.length,
+          y: 0,
+          z: 0,
+        },
+        {
+          x: 0,
+          y: item.y + item.width,
+          z: 0,
+        },
+        {
+          x: 0,
+          y: 0,
+          z: item.z + item.height,
         }
       )
     }
+
+    positions = uniquePositions(positions)
+
+    // Сначала пробуем позиции ближе к углу коробки.
+    positions.sort(
+      (a, b) =>
+        a.z - b.z ||
+        a.y - b.y ||
+        a.x - b.x
+    )
 
     let found: PlacedItem | null = null
 
@@ -308,8 +324,12 @@ function tryExactPack(
         getOrientations(product)
       ) {
         const candidate: PlacedItem = {
-          ...position,
-          ...orientation,
+          x: position.x,
+          y: position.y,
+          z: position.z,
+          length: orientation.length,
+          width: orientation.width,
+          height: orientation.height,
         }
 
         if (
@@ -347,14 +367,74 @@ function tryExactPack(
   return true
 }
 
-// Запасная проверка применяется ТОЛЬКО,
-// если в заказе есть гибкий товар.
-//
-// Жёсткие товары (например кубики)
-// не могут попасть в коробку только потому,
-// что математически хватает объёма.
+// Пробуем несколько разумных порядков.
+// Это важно: одна и та же комбинация может не
+// сложиться в одном порядке, но сложиться в другом.
+function tryExactPack(
+  products: ProductForPacking[],
+  box: ShippingBox
+) {
+  const byVolumeDescending =
+    [...products].sort(
+      (a, b) =>
+        volume(
+          b.length,
+          b.width,
+          b.height
+        ) -
+        volume(
+          a.length,
+          a.width,
+          a.height
+        )
+    )
+
+  const byLongestSideDescending =
+    [...products].sort((a, b) => {
+      const aLongest = Math.max(
+        a.length,
+        a.width,
+        a.height
+      )
+
+      const bLongest = Math.max(
+        b.length,
+        b.width,
+        b.height
+      )
+
+      return bLongest - aLongest
+    })
+
+  const byHeightDescending =
+    [...products].sort(
+      (a, b) => b.height - a.height
+    )
+
+  const bySmallestFirst =
+    [...byVolumeDescending].reverse()
+
+  const orders = [
+    byVolumeDescending,
+    byLongestSideDescending,
+    byHeightDescending,
+    bySmallestFirst,
+  ]
+
+  for (const order of orders) {
+    if (tryPackInOrder(order, box)) {
+      return true
+    }
+  }
+
+  return false
+}
+
+// Запасной вариант нужен только для гибких товаров.
+// Например, кукла в жизни может согнуться так,
+// как прямоугольник в математической модели не умеет.
 function tryFlexibleFallback(
-  products: Dimensions[],
+  products: ProductForPacking[],
   box: ShippingBox
 ) {
   const hasFlexibleProduct =
@@ -366,7 +446,7 @@ function tryFlexibleFallback(
     return false
   }
 
-  const usableBox = {
+  const usableBox: Dimensions = {
     length: Math.max(
       0,
       box.length - BOX_PADDING * 2
@@ -381,15 +461,13 @@ function tryFlexibleFallback(
     ),
   }
 
-  const usableBoxDimensions =
+  const boxDimensions =
     sortedDimensions(
       usableBox.length,
       usableBox.width,
       usableBox.height
     )
 
-  // Каждый товар всё равно должен
-  // по отдельности физически помещаться.
   const everyProductFits =
     products.every((product) => {
       const productDimensions =
@@ -401,11 +479,11 @@ function tryFlexibleFallback(
 
       return (
         productDimensions[0] <=
-          usableBoxDimensions[0] &&
+          boxDimensions[0] &&
         productDimensions[1] <=
-          usableBoxDimensions[1] &&
+          boxDimensions[1] &&
         productDimensions[2] <=
-          usableBoxDimensions[2]
+          boxDimensions[2]
       )
     })
 
@@ -444,7 +522,7 @@ export function packOrder(
     return null
   }
 
-  const products: Dimensions[] = []
+  const products: ProductForPacking[] = []
 
   let totalProductWeight = 0
   let estimated = false
@@ -482,8 +560,8 @@ export function packOrder(
     }
   }
 
-  // От самой маленькой коробки
-  // к самой большой по объёму.
+  // Всегда начинаем с самой маленькой
+  // подходящей коробки по объёму.
   const boxes = [...SHIPPING_BOXES].sort(
     (a, b) =>
       volume(
@@ -499,11 +577,7 @@ export function packOrder(
   )
 
   for (const box of boxes) {
-    // Сначала нормальная 3D-проверка.
-    const exactFit =
-      tryExactPack(products, box)
-
-    if (exactFit) {
+    if (tryExactPack(products, box)) {
       return {
         box,
         weight:
@@ -513,16 +587,12 @@ export function packOrder(
       }
     }
 
-    // Если точная раскладка не получилась,
-    // fallback разрешён только для заказов,
-    // где есть гибкий товар.
-    const flexibleFit =
+    if (
       tryFlexibleFallback(
         products,
         box
       )
-
-    if (flexibleFit) {
+    ) {
       return {
         box,
         weight:
@@ -533,5 +603,8 @@ export function packOrder(
     }
   }
 
+  // Если алгоритм всё равно не уверен,
+  // заказ не блокируем.
+  // Стоимость СДЭК определим после упаковки.
   return null
 }

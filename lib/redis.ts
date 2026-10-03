@@ -1,6 +1,46 @@
-import { Redis } from '@upstash/redis'
+const url = process.env.KV_REST_API_URL
+const token = process.env.KV_REST_API_TOKEN
 
-export const redis = new Redis({
-  url: process.env.KV_REST_API_URL!,
-  token: process.env.KV_REST_API_TOKEN!,
-})
+async function command<T = unknown>(args: (string | number)[]): Promise<T> {
+  if (!url || !token) {
+    throw new Error('Redis environment variables are not configured')
+  }
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(args),
+    cache: 'no-store',
+  })
+
+  if (!response.ok) {
+    throw new Error(`Redis returned ${response.status}`)
+  }
+
+  const data = await response.json()
+
+  if (data.error) {
+    throw new Error(data.error)
+  }
+
+  return data.result as T
+}
+
+export const redis = {
+  async set(key: string, value: unknown) {
+    return command(['SET', key, JSON.stringify(value)])
+  },
+
+  async get<T>(key: string): Promise<T | null> {
+    const result = await command<string | null>(['GET', key])
+
+    if (result === null) {
+      return null
+    }
+
+    return JSON.parse(result) as T
+  },
+}

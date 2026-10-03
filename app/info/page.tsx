@@ -5,6 +5,7 @@ import {
   Heart,
   Package,
   RotateCcw,
+  Tag,
 } from 'lucide-react'
 
 export default function InfoPage() {
@@ -112,6 +113,43 @@ export default function InfoPage() {
         <div className="border-b border-[#EEE5DD] p-5">
           <div className="mb-3 flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F8F3EE]">
+              <Tag
+                className="h-5 w-5 text-[#411D0A]"
+                strokeWidth={1.8}
+              />
+            </div>
+
+            <h2 className="font-serif text-xl font-semibold text-[#411D0A]">
+              Цены
+            </h2>
+          </div>
+
+          <div className="space-y-3 text-sm leading-relaxed text-[#6F5A4D]">
+            <p>
+              Стоимость товаров в интернет-магазине
+              указана в рублях РФ за одну единицу
+              товара.
+            </p>
+
+            <p>
+              Если в результате технической ошибки
+              на сайте была указана некорректная
+              стоимость товара, мы свяжемся с вами
+              для уточнения актуальной цены и
+              подтверждения заказа.
+            </p>
+
+            <p>
+              Если связаться с покупателем не
+              удаётся в течение 24 часов, заказ
+              может быть отменён.
+            </p>
+          </div>
+        </div>
+
+        <div className="border-b border-[#EEE5DD] p-5">
+          <div className="mb-3 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F8F3EE]">
               <RotateCcw
                 className="h-5 w-5 text-[#411D0A]"
                 strokeWidth={1.8}
@@ -119,27 +157,25 @@ export default function InfoPage() {
             </div>
 
             <h2 className="font-serif text-xl font-semibold text-[#411D0A]">
-              Возврат и обмен
+              Возврат
             </h2>
           </div>
 
           <div className="space-y-3 text-sm leading-relaxed text-[#6F5A4D]">
             <p>
-              Если с заказом что-то не так,
-              свяжитесь с нами и укажите номер
-              заказа — мы поможем разобраться.
+              Вы можете оформить возврат товара в
+              течение 14 дней с момента получения,
+              если товар не был в использовании,
+              сохранил первоначальный товарный вид
+              и потребительские свойства, а также
+              оригинальную упаковку и ярлыки.
             </p>
 
             <p>
-              Возврат и обмен товаров оформляются
-              с учётом требований законодательства
-              и особенностей конкретного товара.
-            </p>
-
-            <p>
-              Пожалуйста, сохраняйте товарный вид,
-              комплектацию и упаковку до решения
-              вопроса о возврате.
+              Расходы, связанные с обратной
+              отправкой товара — в том числе услуги
+              курьера, почты или транспортной
+              службы — оплачивает покупатель.
             </p>
           </div>
         </div>

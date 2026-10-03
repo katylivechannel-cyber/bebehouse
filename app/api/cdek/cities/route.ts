@@ -1,5 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+type PopularCity = {
+  code: number
+  city: string
+  region: string
+  subRegion?: string
+}
+
+const popularCities: PopularCity[] = [
+  {
+    code: 44,
+    city: 'Москва',
+    region: 'Москва',
+  },
+  {
+    code: 137,
+    city: 'Санкт-Петербург',
+    region: 'Санкт-Петербург',
+  },
+  {
+    code: 250,
+    city: 'Екатеринбург',
+    region: 'Свердловская область',
+  },
+]
+
 async function getCdekToken() {
   const clientId = process.env.CDEK_CLIENT_ID
   const clientSecret = process.env.CDEK_CLIENT_SECRET
@@ -45,15 +70,46 @@ async function getCdekToken() {
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
-    const city = searchParams.get('city')?.trim()
 
-    if (!city || city.length < 2) {
+    const city =
+      searchParams.get('city')?.trim() || ''
+
+    if (city.length < 2) {
       return NextResponse.json({
         success: true,
         cities: [],
       })
     }
 
+    const query = city.toLowerCase().replace(/ё/g, 'е')
+
+    //
+    // Сначала ищем среди известных городов.
+    // Благодаря этому "ека", "моск", "санкт" работают
+    // сразу как autocomplete.
+    //
+    const localMatches = popularCities.filter((item) => {
+      const cityName = item.city
+        .toLowerCase()
+        .replace(/ё/g, 'е')
+
+      return (
+        cityName.startsWith(query) ||
+        cityName.includes(query)
+      )
+    })
+
+    if (localMatches.length > 0) {
+      return NextResponse.json({
+        success: true,
+        cities: localMatches,
+      })
+    }
+
+    //
+    // Если среди быстрых подсказок ничего нет,
+    // спрашиваем СДЭК.
+    //
     const token = await getCdekToken()
 
     const params = new URLSearchParams({

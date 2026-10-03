@@ -15,7 +15,7 @@ type StoredOrder = {
   phone: string
   email: string
   city: string
-
+  
   deliveryMethod: DeliveryMethod
 
   cdekPoint: string | null

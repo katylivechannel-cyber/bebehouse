@@ -89,6 +89,9 @@ const DEFAULT_PRODUCT = {
 // Для нескольких товаров оставляем запас,
 // потому что реальные предметы не складываются как жидкость :)
 const MAX_VOLUME_USAGE = 0.8
+// Запас на пупырчатую плёнку:
+// примерно по 1 см с каждой стороны товара.
+const PACKING_PADDING = 2
 
 function volume(
   length: number,
@@ -138,13 +141,17 @@ function getProductShippingData(product: Product) {
     product.width === null ||
     product.height === null
 
-  return {
-    weight: product.weight ?? DEFAULT_PRODUCT.weight,
-    length: product.length ?? DEFAULT_PRODUCT.length,
-    width: product.width ?? DEFAULT_PRODUCT.width,
-    height: product.height ?? DEFAULT_PRODUCT.height,
-    estimated,
-  }
+  const length = product.length ?? DEFAULT_PRODUCT.length
+const width = product.width ?? DEFAULT_PRODUCT.width
+const height = product.height ?? DEFAULT_PRODUCT.height
+
+return {
+  weight: product.weight ?? DEFAULT_PRODUCT.weight,
+  length: length + PACKING_PADDING,
+  width: width + PACKING_PADDING,
+  height: height + PACKING_PADDING,
+  estimated,
+}
 }
 
 export function packOrder(

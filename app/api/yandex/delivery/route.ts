@@ -25,15 +25,112 @@ function parseYandexPrice(value: unknown) {
     : null
 }
 
+function normalize(value: unknown) {
+  return String(value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/ё/g, 'е')
+}
+
+async function findYandexPointForCity(
+  token: string,
+  city: string
+) {
+  const response = await fetch(
+    'https://b2b-authproxy.taxi.yandex.net/api/b2b/platform/pickup-points/list',
+    {
+      method: 'POST',
+
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept-Language': 'ru',
+      },
+
+      body: JSON.stringify({}),
+
+      cache: 'no-store',
+    }
+  )
+
+  const data = await response.json()
+
+  if (!response.ok) {
+    console.error(
+      'Yandex pickup points error:',
+      data
+    )
+
+    return null
+  }
+
+  const points = Array.isArray(data?.points)
+    ? data.points
+    : Array.isArray(data)
+      ? data
+      : []
+
+  const normalizedCity = normalize(city)
+
+  const cityPoints = points.filter(
+    (point: any) =>
+      normalize(point?.address?.locality) ===
+        normalizedCity &&
+      point?.type === 'pickup_point'
+  )
+
+  if (!cityPoints.length) {
+    return null
+  }
+
+  /*
+    Для предварительного расчёта стараемся
+    взять обычный ПВЗ Яндекса, а не 5Post.
+
+    5Post оставляем покупателю доступным
+    при окончательном выборе ПВЗ.
+  */
+  const regularYandexPoint =
+    cityPoints.find((point: any) => {
+      const searchableText = normalize(
+        [
+          point?.name,
+          point?.address?.full_address,
+          point?.address?.street,
+        ]
+          .filter(Boolean)
+          .join(' ')
+      )
+
+      return (
+        !searchableText.includes('5post') &&
+        !searchableText.includes('пятероч')
+      )
+    }) ?? cityPoints[0]
+
+  return {
+    id: String(
+      regularYandexPoint?.id ?? ''
+    ),
+
+    address:
+      regularYandexPoint?.address
+        ?.full_address ??
+      '',
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const token = process.env.YANDEX_DELIVERY_TOKEN
+    const token =
+      process.env.YANDEX_DELIVERY_TOKEN
 
     if (!token) {
       return NextResponse.json(
         {
           success: false,
-          error: 'YANDEX_DELIVERY_TOKEN не найден',
+          error:
+            'YANDEX_DELIVERY_TOKEN не найден',
         },
         { status: 500 }
       )
@@ -41,17 +138,56 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
 
-    const destinationStationId =
-      String(body.destinationStationId ?? '').trim()
+    let destinationStationId =
+      String(
+        body.destinationStationId ?? ''
+      ).trim()
+
+    const city =
+      String(body.city ?? '').trim()
 
     const items =
-      Array.isArray(body.items) ? body.items : []
+      Array.isArray(body.items)
+        ? body.items
+        : []
+
+    /*
+      Если конкретный ПВЗ ещё не выбран,
+      но город уже известен —
+      берём обычный ПВЗ Яндекса
+      для предварительного расчёта.
+    */
+    let preliminary = false
+    let calculationPointAddress = ''
+
+    if (!destinationStationId && city) {
+      const point =
+        await findYandexPointForCity(
+          token,
+          city
+        )
+
+      if (!point?.id) {
+        return NextResponse.json({
+          success: true,
+          calculated: false,
+          reason: 'point',
+        })
+      }
+
+      destinationStationId = point.id
+      calculationPointAddress =
+        point.address
+
+      preliminary = true
+    }
 
     if (!destinationStationId) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Не выбран ПВЗ Яндекса',
+          error:
+            'Не выбран ПВЗ Яндекса и не указан город',
         },
         { status: 400 }
       )
@@ -75,7 +211,8 @@ export async function POST(request: NextRequest) {
     let assessedPriceRub = 0
 
     for (const item of items) {
-      const quantity = Number(item.quantity)
+      const quantity =
+        Number(item.quantity)
 
       if (
         !item.productId ||
@@ -93,7 +230,8 @@ export async function POST(request: NextRequest) {
       }
 
       const product = products.find(
-        (product) => product.id === item.productId
+        (product) =>
+          product.id === item.productId
       )
 
       if (!product) {
@@ -113,19 +251,20 @@ export async function POST(request: NextRequest) {
 
       /*
         Настоящая стоимость товара.
-        Она используется как объявленная стоимость
-        для Яндекс Доставки.
+        Используется как объявленная
+        стоимость Яндекс Доставки.
       */
       assessedPriceRub +=
         product.price * quantity
     }
 
-    const packing = packOrder(packingItems)
+    const packing =
+      packOrder(packingItems)
 
     /*
-      Если упаковщик не смог подобрать коробку
-      или использовал примерные данные,
-      считаем доставку по XL.
+      Если упаковщик не смог подобрать
+      коробку или использовал примерные
+      данные — считаем по XL.
     */
     const useFallbackXL =
       !packing || packing.estimated
@@ -141,15 +280,15 @@ export async function POST(request: NextRequest) {
         }
 
     /*
-      Яндекс принимает объявленную стоимость
-      в копейках.
+      Объявленная стоимость —
+      настоящая стоимость товаров.
 
-      ВАЖНО:
-      даже при fallback XL стоимость товаров
-      остаётся настоящей.
+      Яндекс принимает её в копейках.
     */
     const assessedPriceKopecks =
-      Math.round(assessedPriceRub * 100)
+      Math.round(
+        assessedPriceRub * 100
+      )
 
     const response = await fetch(
       'https://b2b-authproxy.taxi.yandex.net/api/b2b/platform/pricing-calculator',
@@ -158,7 +297,8 @@ export async function POST(request: NextRequest) {
 
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          'Content-Type':
+            'application/json',
           'Accept-Language': 'ru',
         },
 
@@ -209,13 +349,9 @@ export async function POST(request: NextRequest) {
       }
     )
 
-    const data = await response.json()
+    const data =
+      await response.json()
 
-    /*
-      Если Яндекс не смог рассчитать доставку
-      даже с выбранными параметрами,
-      просто не предлагаем этот способ.
-    */
     if (!response.ok) {
       console.error(
         'Yandex delivery calculation error:',
@@ -230,7 +366,9 @@ export async function POST(request: NextRequest) {
     }
 
     const yandexPrice =
-      parseYandexPrice(data?.pricing_total)
+      parseYandexPrice(
+        data?.pricing_total
+      )
 
     if (yandexPrice === null) {
       return NextResponse.json({
@@ -241,29 +379,45 @@ export async function POST(request: NextRequest) {
     }
 
     /*
-      Покупатель оплачивает Яндекс Доставку
-      нам вместе с товаром.
+      Компенсируем налог 7%.
 
-      Чтобы после налога 7% у нас осталась
-      полная стоимость доставки:
+      Цена клиенту =
+      цена Яндекса / 0.93
 
-      цена клиенту = цена Яндекса / 0.93
-
-      Округляем вверх до целого рубля.
+      Округляем вверх до рубля.
     */
     const customerPrice =
-      Math.ceil(yandexPrice / 0.93)
+      Math.ceil(
+        yandexPrice / 0.93
+      )
 
     return NextResponse.json({
       success: true,
       calculated: true,
+
+      /*
+        true = предварительный расчёт
+        по обычному ПВЗ города.
+
+        false = расчёт уже по
+        выбранному покупателем ПВЗ.
+      */
+      preliminary,
 
       delivery: {
         yandexPrice,
         customerPrice,
 
         deliveryDays:
-          Number(data?.delivery_days) || null,
+          Number(
+            data?.delivery_days
+          ) || null,
+      },
+
+      calculationPoint: {
+        id: destinationStationId,
+        address:
+          calculationPointAddress,
       },
 
       packing: {

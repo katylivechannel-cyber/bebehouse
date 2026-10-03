@@ -3,5 +3,11 @@
     "app/api/payment/route.ts": {
       "includeFiles": "tochka-ca.pem"
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/delivery-tracking",
+      "schedule": "17 * * * *"
+    }
+  ]
 }

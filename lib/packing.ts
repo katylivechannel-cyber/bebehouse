@@ -181,7 +181,6 @@ return {
   height: height + PACKING_PADDING,
   estimated,
 }
-}
 
 export function packOrder(
   items: PackingItem[]

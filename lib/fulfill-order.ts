@@ -81,54 +81,104 @@ export async function fulfillOrder(operationId: string) {
 
   // Отправляем письмо покупателю
   if (!order.emailSent && order.email) {
-    const resendKey = process.env.RESEND_API_KEY
+  const resendKey = process.env.RESEND_API_KEY
 
-    if (!resendKey) {
-      throw new Error('Не настроен Resend')
-    }
-
-    const emailResponse = await fetch(
-      'https://api.resend.com/emails',
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${resendKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-  from: 'bébéhouse <onboarding@resend.dev>',
-  to: [order.email],
-  subject: `Заказ №${order.orderNumber} — bébéhouse 🤍`,
-  html: `
-    <div style="font-family: Arial, sans-serif; color: #411D0A; line-height: 1.6;">
-      <h2>Спасибо за заказ, ${order.fullName}! 🤍</h2>
-
-      <p><strong>Заказ №${order.orderNumber}</strong></p>
-
-      <p>Оплата прошла успешно.</p>
-
-      <p>
-        Мы передадим ваш заказ в СДЭК в течение 1–2 дней.
-        Как только посылка будет отправлена, трек-номер придёт на эту электронную почту.
-      </p>
-
-      <p>
-        С любовью,<br />
-        bébéhouse
-      </p>
-    </div>
-  `,
-}),
-      }
-    )
-
-    if (!emailResponse.ok) {
-      throw new Error('Не удалось отправить email')
-    }
-
-    order.emailSent = true
-    await redis.set(`order:${operationId}`, order)
+  if (!resendKey) {
+    throw new Error('Не настроен Resend')
   }
+
+  const escapeHtml = (value: string) =>
+    value
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;')
+
+  const itemsHtml = order.items
+    .map(
+      (item) => `
+        <div style="padding: 12px 0; border-bottom: 1px solid #eee8e3;">
+          <div style="font-weight: 600;">
+            ${escapeHtml(item.name)}
+          </div>
+          <div style="font-size: 14px; color: #7a6a61; margin-top: 4px;">
+            ${item.quantity} шт. × ${item.price.toLocaleString('ru-RU')} ₽
+          </div>
+        </div>
+      `
+    )
+    .join('')
+
+  const emailResponse = await fetch(
+    'https://api.resend.com/emails',
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${resendKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'bébéhouse <onboarding@resend.dev>',
+        to: [order.email],
+        subject: `Заказ №${order.orderNumber} — bébéhouse 🤍`,
+        html: `
+          <div style="font-family: Arial, sans-serif; color: #411D0A; line-height: 1.6; max-width: 600px; margin: 0 auto;">
+
+            <h2 style="margin-bottom: 8px;">
+              Спасибо за заказ, ${escapeHtml(order.fullName)}! 🤍
+            </h2>
+
+            <p style="margin-top: 0; color: #7a6a61;">
+              Заказ №${order.orderNumber}
+            </p>
+
+            <p>
+              Оплата прошла успешно.
+            </p>
+
+            <h3 style="margin-top: 28px; margin-bottom: 4px;">
+              Ваш заказ
+            </h3>
+
+            ${itemsHtml}
+
+            <div style="margin-top: 18px; font-size: 18px;">
+              <strong>
+                Итого: ${order.total.toLocaleString('ru-RU')} ₽
+              </strong>
+            </div>
+
+            <div style="margin-top: 28px; padding: 16px; background: #faf7f2; border-radius: 14px;">
+              <strong>Доставка СДЭК</strong>
+              <div style="margin-top: 6px;">
+                ${escapeHtml(order.cdekPoint)}
+              </div>
+            </div>
+
+            <p style="margin-top: 28px;">
+              Мы передадим ваш заказ в СДЭК в течение 1–2 дней.
+              Как только посылка будет отправлена, трек-номер придёт на эту электронную почту.
+            </p>
+
+            <p style="margin-top: 28px;">
+              С любовью,<br />
+              <strong>bébéhouse 🤍</strong>
+            </p>
+
+          </div>
+        `,
+      }),
+    }
+  )
+
+  if (!emailResponse.ok) {
+    throw new Error('Не удалось отправить email')
+  }
+
+  order.emailSent = true
+  await redis.set(`order:${operationId}`, order)
+}
 
   order.status = 'paid'
   await redis.set(`order:${operationId}`, order)

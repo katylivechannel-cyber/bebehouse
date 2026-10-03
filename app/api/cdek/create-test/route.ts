@@ -207,8 +207,7 @@ export async function GET(request: NextRequest) {
               payment: {
                 value: 0,
               },
-              cost: {
-                value: 10,
+              cost: 10,
               },
               weight: TEST_PACKAGE.weight,
               amount: 1,

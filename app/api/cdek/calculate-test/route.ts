@@ -21,8 +21,7 @@ async function getCdekToken() {
     {
       method: 'POST',
       headers: {
-        'Content-Type':
-          'application/x-www-form-urlencoded',
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
       body,
       cache: 'no-store',
@@ -42,6 +41,19 @@ async function getCdekToken() {
   return data.access_token as string
 }
 
+// Считаем итоговую стоимость доставки для покупателя
+function calculateCustomerDeliveryPrice(cdekPrice: number) {
+  // НДС СДЭК 7%
+  const withVat = cdekPrice * 1.07
+
+  // Посредническое вознаграждение:
+  // 3% + НДС 7% на эту комиссию = 3.21%
+  const withAcquiring = withVat * 1.0321
+
+  // Округляем ВВЕРХ до ближайших 10 ₽
+  return Math.ceil(withAcquiring / 10) * 10
+}
+
 export async function GET() {
   try {
     const token = await getCdekToken()
@@ -58,11 +70,11 @@ export async function GET() {
           type: 1,
 
           from_location: {
-            code: 137,
+            code: 137, // Санкт-Петербург
           },
 
           to_location: {
-            code: 44,
+            code: 44, // Москва
           },
 
           packages: [
@@ -93,15 +105,30 @@ export async function GET() {
       )
     }
 
+    // Тариф 136 = "Посылка склад-склад"
+    const tariff = data.tariff_codes?.find(
+      (item: any) => item.tariff_code === 136
+    )
+
+    if (!tariff) {
+      return NextResponse.json({
+        success: false,
+        error:
+          'СДЭК не вернул тариф 136 "Посылка склад-склад"',
+      })
+    }
+
+    const cdekPrice = Number(tariff.delivery_sum)
+
+    const customerPrice =
+      calculateCustomerDeliveryPrice(cdekPrice)
+
     return NextResponse.json({
       success: true,
 
       test: {
         from: 'Санкт-Петербург',
-        fromCode: 137,
-
         to: 'Москва',
-        toCode: 44,
 
         package: {
           weight: 1050,
@@ -111,7 +138,16 @@ export async function GET() {
         },
       },
 
-      tariffs: data.tariff_codes,
+      tariff: {
+        code: tariff.tariff_code,
+        name: tariff.tariff_name,
+
+        cdekPrice,
+        customerPrice,
+
+        periodMin: tariff.period_min,
+        periodMax: tariff.period_max,
+      },
     })
   } catch (error) {
     return NextResponse.json(

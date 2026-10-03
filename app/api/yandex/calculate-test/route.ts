@@ -149,11 +149,13 @@ export async function GET() {
       pricing_total у Яндекса может прийти строкой.
       Например: "161.10"
     */
-    const rawPricing =
-      calculateData?.pricing_total?.replace?.(',', '.') ??
-      calculateData?.pricing_total
+    const rawPricing = String(
+  calculateData?.pricing_total ?? ''
+)
+  .replace(',', '.')
+  .replace(/[^\d.]/g, '')
 
-    const yandexPrice = Number(rawPricing)
+const yandexPrice = Number(rawPricing)
 
     const customerPrice =
       Number.isFinite(yandexPrice) && yandexPrice > 0

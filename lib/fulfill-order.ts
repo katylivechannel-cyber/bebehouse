@@ -2,6 +2,7 @@ import { redis } from '@/lib/redis'
 
 type StoredOrder = {
   operationId: string
+  orderNumber: number
   fullName: string
   phone: string
   email: string
@@ -37,6 +38,7 @@ export async function fulfillOrder(operationId: string) {
 
     const text = [
       '🛍 Новый заказ bébéhouse',
+      `Заказ №${order.orderNumber}`,
       '',
       `👤 ФИО: ${order.fullName}`,
       `📞 Телефон: ${order.phone}`,
@@ -97,6 +99,7 @@ export async function fulfillOrder(operationId: string) {
           from: 'bébéhouse <onboarding@resend.dev>',
           to: [order.email],
           subject: 'Спасибо за заказ в bébéhouse 🤍',
+          <p><strong>Заказ №${order.orderNumber}</strong></p>
           html: `
             <div style="font-family: Arial, sans-serif; color: #411D0A; line-height: 1.6;">
               <h2>Спасибо за заказ, ${order.fullName}! 🤍</h2>

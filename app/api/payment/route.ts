@@ -9,13 +9,15 @@ type CartItem = {
 
 export async function POST(request: Request) {
   try {
-    const { items, fullName, phone, email, cdekPoint } = await request.json() as {
-  items: CartItem[]
-  fullName: string
-  phone: string
-  email: string
-  cdekPoint: string
-}
+    const { items, fullName, phone, email, city, cdekPoint } =
+      (await request.json()) as {
+        items: CartItem[]
+        fullName: string
+        phone: string
+        email: string
+        city: string
+        cdekPoint: string
+      }
 
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
@@ -101,40 +103,44 @@ export async function POST(request: Request) {
         { status: response.status }
       )
     }
-const operationId = data.Data.operationId
+
+    const operationId = data.Data.operationId
+
     const counter = await redis.incr('order-number-counter')
-const orderNumber = 1000 + counter
+    const orderNumber = 1000 + counter
 
-const orderItems = items.map((item) => {
-  const product = products.find(
-    (product) => product.id === item.productId
-  )!
+    const orderItems = items.map((item) => {
+      const product = products.find(
+        (product) => product.id === item.productId
+      )!
 
-  return {
-    productId: product.id,
-    name: product.name,
-    price: product.price,
-    quantity: item.quantity,
-  }
-})
+      return {
+        productId: product.id,
+        name: product.name,
+        price: product.price,
+        quantity: Math.floor(Number(item.quantity)),
+      }
+    })
 
-await redis.set(`order:${operationId}`, {
-  operationId,
-   orderNumber,
-  fullName,
-  phone,
-  email,
-  cdekPoint,
-  items: orderItems,
-  total,
-  status: 'pending',
-  telegramSent: false,
-  emailSent: false,
-  createdAt: new Date().toISOString(),
-})
+    await redis.set(`order:${operationId}`, {
+      operationId,
+      orderNumber,
+      fullName,
+      phone,
+      email,
+      city,
+      cdekPoint,
+      items: orderItems,
+      total,
+      status: 'pending',
+      telegramSent: false,
+      emailSent: false,
+      createdAt: new Date().toISOString(),
+    })
+
     return NextResponse.json({
       paymentLink: data.Data.paymentLink,
-      operationId: data.Data.operationId,
+      operationId,
       total,
     })
   } catch (error: any) {

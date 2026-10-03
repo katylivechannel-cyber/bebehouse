@@ -86,12 +86,13 @@ const DEFAULT_PRODUCT = {
   height: 10,
 }
 
-// Для нескольких товаров используем не больше 80%
-// математического объёма коробки.
+// Для нескольких разных групп товаров
+// не используем коробку на 100% математического объёма.
 const MAX_VOLUME_USAGE = 0.8
 
-// Запас на пупырчатую плёнку:
-// примерно по 1 см с каждой стороны товара.
+// Пупырка примерно по 1 см с каждой стороны.
+// Эти 2 см добавляются к СТОПКЕ одинаковых товаров,
+// а не к каждому экземпляру отдельно.
 const PACKING_PADDING = 2
 
 function volume(
@@ -135,7 +136,9 @@ function itemFitsBox(
   )
 }
 
-function getProductShippingData(product: Product) {
+// Получаем реальные размеры одного товара.
+// Здесь пупырку пока НЕ добавляем.
+function getProductBaseData(product: Product) {
   const estimated =
     product.weight === null ||
     product.length === null ||
@@ -152,8 +155,6 @@ function getProductShippingData(product: Product) {
     product.height ?? DEFAULT_PRODUCT.height
 
   // У 35-см кукол мягкие ноги подгибаются.
-  // Для упаковки считаем фактический размер
-  // примерно 25 × 16 × 5 см.
   if (product.packingGroup === 'кукла35') {
     length = 25
     width = 16
@@ -163,13 +164,72 @@ function getProductShippingData(product: Product) {
   return {
     weight:
       product.weight ?? DEFAULT_PRODUCT.weight,
-
-    // Запас на пупырку
-    length: length + PACKING_PADDING,
-    width: width + PACKING_PADDING,
-    height: height + PACKING_PADDING,
-
+    length,
+    width,
+    height,
     estimated,
+  }
+}
+
+// Собираем несколько одинаковых товаров в одну стопку.
+// Выбираем наиболее компактный вариант:
+// можно складывать по длине, ширине или высоте.
+function makeProductStack(
+  product: Product,
+  quantity: number
+) {
+  const data = getProductBaseData(product)
+
+  const variants = [
+    {
+      length: data.length * quantity,
+      width: data.width,
+      height: data.height,
+    },
+    {
+      length: data.length,
+      width: data.width * quantity,
+      height: data.height,
+    },
+    {
+      length: data.length,
+      width: data.width,
+      height: data.height * quantity,
+    },
+  ]
+
+  // Выбираем вариант с наименьшей самой длинной стороной.
+  // При равенстве — с меньшей второй стороной.
+  variants.sort((a, b) => {
+    const aDims = sortedDimensions(
+      a.length,
+      a.width,
+      a.height
+    ).reverse()
+
+    const bDims = sortedDimensions(
+      b.length,
+      b.width,
+      b.height
+    ).reverse()
+
+    if (aDims[0] !== bDims[0]) {
+      return aDims[0] - bDims[0]
+    }
+
+    return aDims[1] - bDims[1]
+  })
+
+  const best = variants[0]
+
+  return {
+    // Пупырку добавляем один раз вокруг всей стопки.
+    length: best.length + PACKING_PADDING,
+    width: best.width + PACKING_PADDING,
+    height: best.height + PACKING_PADDING,
+
+    weight: data.weight * quantity,
+    estimated: data.estimated,
   }
 }
 
@@ -181,9 +241,8 @@ export function packOrder(
   let totalProductVolume = 0
   let totalProductWeight = 0
   let estimated = false
-  let totalQuantity = 0
 
-  const expandedProducts: {
+  const stacks: {
     length: number
     width: number
     height: number
@@ -198,41 +257,31 @@ export function packOrder(
       return null
     }
 
-    const data =
-      getProductShippingData(item.product)
+    const stack = makeProductStack(
+      item.product,
+      item.quantity
+    )
 
-    if (data.estimated) {
+    if (stack.estimated) {
       estimated = true
     }
 
-    totalQuantity += item.quantity
+    totalProductWeight += stack.weight
 
-    totalProductWeight +=
-      data.weight * item.quantity
+    totalProductVolume += volume(
+      stack.length,
+      stack.width,
+      stack.height
+    )
 
-    totalProductVolume +=
-      volume(
-        data.length,
-        data.width,
-        data.height
-      ) * item.quantity
-
-    for (
-      let i = 0;
-      i < item.quantity;
-      i++
-    ) {
-      expandedProducts.push({
-        length: data.length,
-        width: data.width,
-        height: data.height,
-      })
-    }
+    stacks.push({
+      length: stack.length,
+      width: stack.width,
+      height: stack.height,
+    })
   }
 
-  // Все коробки можно использовать для любых товаров.
-  // Сортируем от самой маленькой по объёму
-  // к самой большой.
+  // От самой маленькой коробки к самой большой.
   const boxes = [...SHIPPING_BOXES].sort(
     (a, b) =>
       volume(
@@ -248,19 +297,19 @@ export function packOrder(
   )
 
   for (const box of boxes) {
-    // Каждый товар должен физически помещаться
-    // в коробку с учётом возможного поворота.
-    const everyItemFits =
-      expandedProducts.every((item) =>
+    // Каждая стопка должна физически помещаться
+    // в коробку с учётом поворота.
+    const everyStackFits = stacks.every(
+      (stack) =>
         itemFitsBox(
-          item.length,
-          item.width,
-          item.height,
+          stack.length,
+          stack.width,
+          stack.height,
           box
         )
-      )
+    )
 
-    if (!everyItemFits) {
+    if (!everyStackFits) {
       continue
     }
 
@@ -270,9 +319,9 @@ export function packOrder(
       box.height
     )
 
-    // Для одного товара достаточно,
-    // чтобы он физически помещался.
-    if (totalQuantity === 1) {
+    // Если в заказе только одна группа одинакового товара,
+    // достаточно того, что стопка физически помещается.
+    if (stacks.length === 1) {
       return {
         box,
         weight:
@@ -282,8 +331,8 @@ export function packOrder(
       }
     }
 
-    // Для нескольких товаров дополнительно
-    // проверяем общий объём с запасом.
+    // Если товаров разных несколько —
+    // оставляем дополнительный запас на укладку.
     const usableVolume =
       boxVolume * MAX_VOLUME_USAGE
 
@@ -300,7 +349,5 @@ export function packOrder(
     }
   }
 
-  // Если ни одна коробка не подошла,
-  // ничего не придумываем.
   return null
 }

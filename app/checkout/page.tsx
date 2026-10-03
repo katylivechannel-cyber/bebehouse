@@ -44,68 +44,51 @@ export default function CheckoutPage() {
   const [isLoadingPoints, setIsLoadingPoints] = useState(false)
 
   useEffect(() => {
-    if (cityCode !== null) {
-      setCityResults([])
-      return
-    }
-
     const query = city.trim()
 
-    if (query.length < 2) {
+    if (cityCode !== null || query.length < 2) {
       setCityResults([])
+      setIsSearchingCities(false)
       return
     }
 
-    const timer = setTimeout(async () => {
-      try {
-        setIsSearchingCities(true)
+    const controller = new AbortController()
 
-        useEffect(() => {
-  const query = city.trim()
+    const timer = setTimeout(() => {
+      setIsSearchingCities(true)
 
-  if (cityCode !== null || query.length < 2) {
-    setCityResults([])
-    setIsSearchingCities(false)
-    return
-  }
-
-  const controller = new AbortController()
-
-  const timer = setTimeout(() => {
-    setIsSearchingCities(true)
-
-    fetch(
-      `/api/cdek/cities?city=${encodeURIComponent(query)}`,
-      {
-        signal: controller.signal,
-        cache: 'no-store',
-      }
-    )
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.success && Array.isArray(data.cities)) {
-          setCityResults(data.cities)
-        } else {
-          setCityResults([])
+      fetch(
+        `/api/cdek/cities?city=${encodeURIComponent(query)}`,
+        {
+          signal: controller.signal,
+          cache: 'no-store',
         }
-      })
-      .catch((error) => {
-        if (error.name !== 'AbortError') {
-          setCityResults([])
-        }
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) {
-          setIsSearchingCities(false)
-        }
-      })
-  }, 500)
+      )
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success && Array.isArray(data.cities)) {
+            setCityResults(data.cities)
+          } else {
+            setCityResults([])
+          }
+        })
+        .catch((error) => {
+          if (error.name !== 'AbortError') {
+            setCityResults([])
+          }
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) {
+            setIsSearchingCities(false)
+          }
+        })
+    }, 500)
 
-  return () => {
-    clearTimeout(timer)
-    controller.abort()
-  }
-}, [city, cityCode])
+    return () => {
+      clearTimeout(timer)
+      controller.abort()
+    }
+  }, [city, cityCode])
 
   async function selectCity(selectedCity: CdekCity) {
     setCity(selectedCity.city)

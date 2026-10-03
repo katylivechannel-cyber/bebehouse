@@ -102,6 +102,8 @@ export async function POST(request: Request) {
       )
     }
 const operationId = data.Data.operationId
+    const counter = await redis.incr('order-number-counter')
+const orderNumber = 1000 + counter
 
 const orderItems = items.map((item) => {
   const product = products.find(
@@ -118,6 +120,7 @@ const orderItems = items.map((item) => {
 
 await redis.set(`order:${operationId}`, {
   operationId,
+   orderNumber,
   fullName,
   phone,
   email,

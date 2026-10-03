@@ -5,7 +5,9 @@ async function getCdekToken() {
   const clientSecret = process.env.CDEK_CLIENT_SECRET
 
   if (!clientId || !clientSecret) {
-    throw new Error('Нет CDEK_CLIENT_ID или CDEK_CLIENT_SECRET')
+    throw new Error(
+      'Нет CDEK_CLIENT_ID или CDEK_CLIENT_SECRET'
+    )
   }
 
   const body = new URLSearchParams({
@@ -29,6 +31,7 @@ async function getCdekToken() {
 
   if (!response.ok) {
     const text = await response.text()
+
     throw new Error(
       `Ошибка авторизации СДЭК: ${response.status} ${text}`
     )
@@ -55,11 +58,11 @@ export async function GET() {
           type: 1,
 
           from_location: {
-            city: 'Санкт-Петербург',
+            code: 137,
           },
 
           to_location: {
-            city: 'Москва',
+            code: 44,
           },
 
           packages: [
@@ -90,28 +93,16 @@ export async function GET() {
       )
     }
 
-    // Нам интересны тарифы,
-    // где клиент получает заказ в ПВЗ.
-    const tariffs = Array.isArray(data.tariff_codes)
-      ? data.tariff_codes
-          .filter(
-            (tariff: any) =>
-              tariff.delivery_mode === 3 ||
-              tariff.delivery_mode === 4
-          )
-          .sort(
-            (a: any, b: any) =>
-              Number(a.delivery_sum ?? Infinity) -
-              Number(b.delivery_sum ?? Infinity)
-          )
-      : []
-
     return NextResponse.json({
       success: true,
 
       test: {
         from: 'Санкт-Петербург',
+        fromCode: 137,
+
         to: 'Москва',
+        toCode: 44,
+
         package: {
           weight: 1050,
           length: 20,
@@ -120,7 +111,7 @@ export async function GET() {
         },
       },
 
-      tariffs,
+      tariffs: data.tariff_codes,
     })
   } catch (error) {
     return NextResponse.json(

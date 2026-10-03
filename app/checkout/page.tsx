@@ -151,7 +151,13 @@ if (data.paymentLink) {
     total,
   })
 )
+ const telegram = (window as any).Telegram?.WebApp
+
+if (telegram?.openLink) {
+  telegram.openLink(data.paymentLink)
+} else {
   window.location.href = data.paymentLink
+}
 } else {
   alert(JSON.stringify(data, null, 2))
 }

@@ -86,9 +86,10 @@ const DEFAULT_PRODUCT = {
   height: 10,
 }
 
-// Для нескольких товаров оставляем запас,
-// потому что реальные предметы не складываются как жидкость :)
+// Для нескольких товаров используем не больше 80%
+// математического объёма коробки.
 const MAX_VOLUME_USAGE = 0.8
+
 // Запас на пупырчатую плёнку:
 // примерно по 1 см с каждой стороны товара.
 const PACKING_PADDING = 2
@@ -141,12 +142,18 @@ function getProductShippingData(product: Product) {
     product.width === null ||
     product.height === null
 
-  let length = product.length ?? DEFAULT_PRODUCT.length
-  let width = product.width ?? DEFAULT_PRODUCT.width
-  let height = product.height ?? DEFAULT_PRODUCT.height
+  let length =
+    product.length ?? DEFAULT_PRODUCT.length
+
+  let width =
+    product.width ?? DEFAULT_PRODUCT.width
+
+  let height =
+    product.height ?? DEFAULT_PRODUCT.height
 
   // У 35-см кукол мягкие ноги подгибаются.
-  // Реальный размер при упаковке примерно 25 × 16 × 5 см.
+  // Для упаковки считаем фактический размер
+  // примерно 25 × 16 × 5 см.
   if (product.packingGroup === 'кукла35') {
     length = 25
     width = 16
@@ -154,32 +161,16 @@ function getProductShippingData(product: Product) {
   }
 
   return {
-    weight: product.weight ?? DEFAULT_PRODUCT.weight,
+    weight:
+      product.weight ?? DEFAULT_PRODUCT.weight,
 
-    // Добавляем запас на пупырчатую плёнку
+    // Запас на пупырку
     length: length + PACKING_PADDING,
     width: width + PACKING_PADDING,
     height: height + PACKING_PADDING,
 
     estimated,
   }
-}
-  const estimated =
-    product.weight === null ||
-    product.length === null ||
-    product.width === null ||
-    product.height === null
-
-  const length = product.length ?? DEFAULT_PRODUCT.length
-const width = product.width ?? DEFAULT_PRODUCT.width
-const height = product.height ?? DEFAULT_PRODUCT.height
-
-return {
-  weight: product.weight ?? DEFAULT_PRODUCT.weight,
-  length: length + PACKING_PADDING,
-  width: width + PACKING_PADDING,
-  height: height + PACKING_PADDING,
-  estimated,
 }
 
 export function packOrder(
@@ -207,7 +198,8 @@ export function packOrder(
       return null
     }
 
-    const data = getProductShippingData(item.product)
+    const data =
+      getProductShippingData(item.product)
 
     if (data.estimated) {
       estimated = true
@@ -219,10 +211,17 @@ export function packOrder(
       data.weight * item.quantity
 
     totalProductVolume +=
-      volume(data.length, data.width, data.height) *
-      item.quantity
+      volume(
+        data.length,
+        data.width,
+        data.height
+      ) * item.quantity
 
-    for (let i = 0; i < item.quantity; i++) {
+    for (
+      let i = 0;
+      i < item.quantity;
+      i++
+    ) {
       expandedProducts.push({
         length: data.length,
         width: data.width,
@@ -231,27 +230,35 @@ export function packOrder(
     }
   }
 
-  // Все коробки доступны для любых товаров.
+  // Все коробки можно использовать для любых товаров.
   // Сортируем от самой маленькой по объёму
   // к самой большой.
   const boxes = [...SHIPPING_BOXES].sort(
     (a, b) =>
-      volume(a.length, a.width, a.height) -
-      volume(b.length, b.width, b.height)
+      volume(
+        a.length,
+        a.width,
+        a.height
+      ) -
+      volume(
+        b.length,
+        b.width,
+        b.height
+      )
   )
 
   for (const box of boxes) {
-    // Каждый предмет должен физически входить
-    // в выбранную коробку с учётом поворота.
-    const everyItemFits = expandedProducts.every(
-      (item) =>
+    // Каждый товар должен физически помещаться
+    // в коробку с учётом возможного поворота.
+    const everyItemFits =
+      expandedProducts.every((item) =>
         itemFitsBox(
           item.length,
           item.width,
           item.height,
           box
         )
-    )
+      )
 
     if (!everyItemFits) {
       continue
@@ -263,32 +270,37 @@ export function packOrder(
       box.height
     )
 
-    // Если товар всего один и он физически входит —
-    // дополнительный запас по объёму не нужен.
+    // Для одного товара достаточно,
+    // чтобы он физически помещался.
     if (totalQuantity === 1) {
       return {
         box,
         weight:
-          totalProductWeight + box.emptyWeight,
+          totalProductWeight +
+          box.emptyWeight,
         estimated,
       }
     }
 
-    // Для нескольких товаров используем запас,
-    // чтобы алгоритм не пытался набить коробку
-    // на 100% математического объёма.
+    // Для нескольких товаров дополнительно
+    // проверяем общий объём с запасом.
     const usableVolume =
       boxVolume * MAX_VOLUME_USAGE
 
-    if (totalProductVolume <= usableVolume) {
+    if (
+      totalProductVolume <= usableVolume
+    ) {
       return {
         box,
         weight:
-          totalProductWeight + box.emptyWeight,
+          totalProductWeight +
+          box.emptyWeight,
         estimated,
       }
     }
   }
 
+  // Если ни одна коробка не подошла,
+  // ничего не придумываем.
   return null
 }

@@ -7,7 +7,7 @@
   "crons": [
     {
       "path": "/api/cron/delivery-tracking",
-      "schedule": "17 * * * *"
+      "schedule": "17 9 * * *"
     }
   ]
 }

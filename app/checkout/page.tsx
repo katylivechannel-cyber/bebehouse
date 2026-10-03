@@ -111,6 +111,12 @@ export default function CheckoutPage() {
   const [isLoadingYandexDelivery, setIsLoadingYandexDelivery] =
     useState(false)
 
+  const [yandexCityDelivery, setYandexCityDelivery] =
+    useState<YandexDelivery | null>(null)
+
+  const [isLoadingYandexCityDelivery, setIsLoadingYandexCityDelivery] =
+    useState(false)
+
   /*
     ПОИСК ГОРОДА + ПВЗ
   */
@@ -338,10 +344,81 @@ export default function CheckoutPage() {
   }, [cityCode, lines])
 
   /*
-    РАСЧЁТ ЯНДЕКСА
+    ПРЕДВАРИТЕЛЬНЫЙ РАСЧЁТ ЯНДЕКСА ПО ГОРОДУ
+  */
+  useEffect(() => {
+    if (cityCode === null || !city.trim() || lines.length === 0) {
+      setYandexCityDelivery(null)
+      setIsLoadingYandexCityDelivery(false)
+      return
+    }
 
-    Его считаем после выбора конкретного ПВЗ,
-    потому что цена зависит от destinationStationId.
+    const controller = new AbortController()
+
+    async function calculateYandexForCity() {
+      try {
+        setIsLoadingYandexCityDelivery(true)
+        setYandexCityDelivery(null)
+
+        const response = await fetch('/api/yandex/delivery', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            city: city.trim(),
+            items: lines.map((line) => ({
+              productId: line.product.id,
+              quantity: line.quantity,
+            })),
+          }),
+          signal: controller.signal,
+          cache: 'no-store',
+        })
+
+        const data = await response.json()
+
+        if (controller.signal.aborted) return
+
+        if (
+          response.ok &&
+          data.success &&
+          data.calculated &&
+          data.delivery
+        ) {
+          setYandexCityDelivery({
+            yandexPrice: data.delivery.yandexPrice,
+            customerPrice: data.delivery.customerPrice,
+            deliveryDays: data.delivery.deliveryDays,
+          })
+        } else {
+          setYandexCityDelivery(null)
+        }
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.name === 'AbortError'
+        ) {
+          return
+        }
+
+        setYandexCityDelivery(null)
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoadingYandexCityDelivery(false)
+        }
+      }
+    }
+
+    calculateYandexForCity()
+
+    return () => {
+      controller.abort()
+    }
+  }, [cityCode, city, lines])
+
+  /*
+    ТОЧНЫЙ РАСЧЁТ ЯНДЕКСА ПО ВЫБРАННОМУ ПВЗ
   */
   useEffect(() => {
     if (
@@ -627,6 +704,7 @@ export default function CheckoutPage() {
               setCdekDelivery(null)
               setCdekDeliveryCalculated(null)
               setYandexDelivery(null)
+              setYandexCityDelivery(null)
             }}
             placeholder="Например: Екатеринбург"
             autoComplete="address-level2"
@@ -656,9 +734,7 @@ export default function CheckoutPage() {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  onClick={() =>
-                    setDeliveryMethod('cdek')
-                  }
+                  onClick={() => setDeliveryMethod('cdek')}
                   className={`rounded-2xl border p-4 text-left ${
                     deliveryMethod === 'cdek'
                       ? 'border-primary bg-background'
@@ -669,6 +745,26 @@ export default function CheckoutPage() {
                     СДЭК
                   </span>
 
+                  <span className="mt-1 block text-xs font-medium">
+                    {isLoadingCdekDelivery
+                      ? 'Рассчитываем...'
+                      : cdekDelivery
+                        ? `${formatPrice(cdekDelivery.price)}${
+                            cdekDelivery.periodMin !== undefined &&
+                            cdekDelivery.periodMax !== undefined
+                              ? ` · примерно ${
+                                  cdekDelivery.periodMin + 1 ===
+                                  cdekDelivery.periodMax + 1
+                                    ? `${cdekDelivery.periodMin + 1} дн.`
+                                    : `${cdekDelivery.periodMin + 1}–${
+                                        cdekDelivery.periodMax + 1
+                                      } дн.`
+                                }`
+                              : ''
+                          }`
+                        : 'Стоимость после упаковки'}
+                  </span>
+
                   <span className="mt-1 block text-xs text-muted-foreground">
                     Оплата доставки при получении
                   </span>
@@ -676,9 +772,7 @@ export default function CheckoutPage() {
 
                 <button
                   type="button"
-                  onClick={() =>
-                    setDeliveryMethod('yandex')
-                  }
+                  onClick={() => setDeliveryMethod('yandex')}
                   className={`rounded-2xl border p-4 text-left ${
                     deliveryMethod === 'yandex'
                       ? 'border-primary bg-background'
@@ -687,6 +781,21 @@ export default function CheckoutPage() {
                 >
                   <span className="block text-sm font-semibold">
                     Яндекс Доставка
+                  </span>
+
+                  <span className="mt-1 block text-xs font-medium">
+                    {isLoadingYandexCityDelivery
+                      ? 'Рассчитываем...'
+                      : yandexCityDelivery
+                        ? `${formatPrice(yandexCityDelivery.customerPrice)}${
+                            yandexCityDelivery.deliveryDays !== undefined &&
+                            yandexCityDelivery.deliveryDays !== null
+                              ? ` · примерно ${
+                                  yandexCityDelivery.deliveryDays + 1
+                                } дн.`
+                              : ''
+                          }`
+                        : 'Расчёт недоступен'}
                   </span>
 
                   <span className="mt-1 block text-xs text-muted-foreground">
@@ -939,19 +1048,6 @@ export default function CheckoutPage() {
                     </span>
                   </div>
 
-                  {cdekDelivery.periodMin !== undefined &&
-                    cdekDelivery.periodMax !== undefined && (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Примерный срок доставки:{' '}
-                        {cdekDelivery.periodMin + 1 ===
-                        cdekDelivery.periodMax + 1
-                          ? `${cdekDelivery.periodMin + 1} дн.`
-                          : `${cdekDelivery.periodMin + 1}–${
-                              cdekDelivery.periodMax + 1
-                            } дн.`}
-                      </p>
-                    )}
-
                   <p className="mt-1 text-xs text-muted-foreground">
                     Оплата доставки при получении.
                   </p>
@@ -992,14 +1088,6 @@ export default function CheckoutPage() {
                       )}
                     </span>
                   </div>
-
-                  {yandexDelivery.deliveryDays !== undefined &&
-                    yandexDelivery.deliveryDays !== null && (
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Примерный срок доставки:{' '}
-                        {yandexDelivery.deliveryDays + 1} дн.
-                      </p>
-                    )}
 
                   <p className="mt-1 text-xs text-muted-foreground">
                     Оплачивается сразу вместе с заказом.

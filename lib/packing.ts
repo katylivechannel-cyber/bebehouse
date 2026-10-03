@@ -141,6 +141,35 @@ function getProductShippingData(product: Product) {
     product.width === null ||
     product.height === null
 
+  let length = product.length ?? DEFAULT_PRODUCT.length
+  let width = product.width ?? DEFAULT_PRODUCT.width
+  let height = product.height ?? DEFAULT_PRODUCT.height
+
+  // У 35-см кукол мягкие ноги подгибаются.
+  // Реальный размер при упаковке примерно 25 × 16 × 5 см.
+  if (product.packingGroup === 'кукла35') {
+    length = 25
+    width = 16
+    height = 5
+  }
+
+  return {
+    weight: product.weight ?? DEFAULT_PRODUCT.weight,
+
+    // Добавляем запас на пупырчатую плёнку
+    length: length + PACKING_PADDING,
+    width: width + PACKING_PADDING,
+    height: height + PACKING_PADDING,
+
+    estimated,
+  }
+}
+  const estimated =
+    product.weight === null ||
+    product.length === null ||
+    product.width === null ||
+    product.height === null
+
   const length = product.length ?? DEFAULT_PRODUCT.length
 const width = product.width ?? DEFAULT_PRODUCT.width
 const height = product.height ?? DEFAULT_PRODUCT.height

@@ -192,29 +192,28 @@ export async function GET(request: NextRequest) {
         value: recipientDeliveryPrice,
       },
 
-      packages: [
-        {
-          number: '1',
-          weight: TEST_PACKAGE.weight,
-          length: TEST_PACKAGE.length,
-          width: TEST_PACKAGE.width,
-          height: TEST_PACKAGE.height,
+     packages: [
+  {
+    number: '1',
+    weight: TEST_PACKAGE.weight,
+    length: TEST_PACKAGE.length,
+    width: TEST_PACKAGE.width,
+    height: TEST_PACKAGE.height,
 
-          items: [
-            {
-              name: 'Тестовый товар bébéhouse',
-              ware_key: 'BEBEHOUSE-TEST',
-              payment: {
-                value: 0,
-              },
-              cost: 10,
-              },
-              weight: TEST_PACKAGE.weight,
-              amount: 1,
-            },
-          ],
+    items: [
+      {
+        name: 'Тестовый товар bébéhouse',
+        ware_key: 'BEBEHOUSE-TEST',
+        payment: {
+          value: 0,
         },
-      ],
+        cost: 10,
+        weight: TEST_PACKAGE.weight,
+        amount: 1,
+      },
+    ],
+  },
+],
     }
 
     const orderResponse = await fetch(

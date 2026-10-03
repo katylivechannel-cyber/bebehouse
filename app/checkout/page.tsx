@@ -60,26 +60,52 @@ export default function CheckoutPage() {
       try {
         setIsSearchingCities(true)
 
-        const response = await fetch(
-          `/api/cdek/cities?city=${encodeURIComponent(query)}`
-        )
+        useEffect(() => {
+  const query = city.trim()
 
-        const data = await response.json()
+  if (cityCode !== null || query.length < 2) {
+    setCityResults([])
+    setIsSearchingCities(false)
+    return
+  }
 
+  const controller = new AbortController()
+
+  const timer = setTimeout(() => {
+    setIsSearchingCities(true)
+
+    fetch(
+      `/api/cdek/cities?city=${encodeURIComponent(query)}`,
+      {
+        signal: controller.signal,
+        cache: 'no-store',
+      }
+    )
+      .then((response) => response.json())
+      .then((data) => {
         if (data.success && Array.isArray(data.cities)) {
           setCityResults(data.cities)
         } else {
           setCityResults([])
         }
-      } catch {
-        setCityResults([])
-      } finally {
-        setIsSearchingCities(false)
-      }
-    }, 400)
+      })
+      .catch((error) => {
+        if (error.name !== 'AbortError') {
+          setCityResults([])
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setIsSearchingCities(false)
+        }
+      })
+  }, 500)
 
-    return () => clearTimeout(timer)
-  }, [city, cityCode])
+  return () => {
+    clearTimeout(timer)
+    controller.abort()
+  }
+}, [city, cityCode])
 
   async function selectCity(selectedCity: CdekCity) {
     setCity(selectedCity.city)

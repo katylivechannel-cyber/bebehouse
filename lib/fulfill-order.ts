@@ -2,6 +2,9 @@ import { redis } from '@/lib/redis'
 import {
   createCdekOrder,
 } from '@/lib/cdek-create-order'
+import {
+  createYandexOrder,
+} from '@/lib/yandex-create-order'
 
 type DeliveryMethod = 'cdek' | 'yandex'
 
@@ -54,6 +57,10 @@ type StoredOrder = {
   cdekRecipientDeliveryPrice?: number | null
   cdekShipmentCreated?: boolean
   cdekShipmentError?: string | null
+
+  yandexRequestId?: string | null
+  yandexShipmentCreated?: boolean
+  yandexShipmentError?: string | null
 }
 
 function escapeHtml(value: string) {
@@ -82,15 +89,11 @@ export async function fulfillOrder(
   const isCdek =
     order.deliveryMethod === 'cdek'
 
+  const isYandex =
+    order.deliveryMethod === 'yandex'
+
   /*
     СДЭК
-
-    Создаём накладную только после подтверждённой
-    оплаты товара.
-
-    Ошибка СДЭК НЕ должна мешать Telegram/email:
-    заказ уже оплачен, поэтому ошибку сохраняем
-    и продолжаем fulfillment.
   */
   if (
     isCdek &&
@@ -165,6 +168,78 @@ export async function fulfillOrder(
     }
   }
 
+  /*
+    ЯНДЕКС ДОСТАВКА
+
+    Покупатель уже оплатил и товары,
+    и доставку через Точку.
+  */
+  if (
+    isYandex &&
+    !order.yandexShipmentCreated &&
+    !order.yandexRequestId
+  ) {
+    try {
+      if (!order.yandexPointId) {
+        throw new Error(
+          'Не сохранён ID ПВЗ Яндекса'
+        )
+      }
+
+      if (!order.packing) {
+        throw new Error(
+          'Не сохранена упаковка заказа'
+        )
+      }
+
+      const yandex =
+        await createYandexOrder({
+          orderNumber:
+            order.orderNumber,
+          fullName:
+            order.fullName,
+          phone:
+            order.phone,
+          email:
+            order.email,
+          destinationStationId:
+            order.yandexPointId,
+          items:
+            order.items,
+          productsTotal:
+            order.productsTotal,
+          packing:
+            order.packing,
+        })
+
+      order.yandexRequestId =
+        yandex.requestId
+
+      order.yandexShipmentCreated = true
+      order.yandexShipmentError = null
+
+      await redis.set(
+        `order:${operationId}`,
+        order
+      )
+    } catch (error: any) {
+      console.error(
+        'YANDEX AUTO CREATE ERROR:',
+        error
+      )
+
+      order.yandexShipmentCreated = false
+      order.yandexShipmentError =
+        error?.message ||
+        'Не удалось создать Яндекс Доставку'
+
+      await redis.set(
+        `order:${operationId}`,
+        order
+      )
+    }
+  }
+
   const deliveryName = isCdek
     ? 'СДЭК'
     : 'Яндекс Доставка'
@@ -207,6 +282,19 @@ export async function fulfillOrder(
             ]
         : []
 
+    const yandexShipmentLines =
+      isYandex
+        ? order.yandexShipmentCreated
+          ? [
+              `✅ Яндекс Доставка создана`,
+              `🔎 ID отправления: ${order.yandexRequestId}`,
+            ]
+          : [
+              `⚠️ Яндекс Доставка не создана автоматически`,
+              `Ошибка: ${order.yandexShipmentError || 'неизвестная ошибка'}`,
+            ]
+        : []
+
     const deliveryLines = isCdek
       ? [
           `🚚 Доставка: СДЭК`,
@@ -217,6 +305,7 @@ export async function fulfillOrder(
           `🚚 Доставка: Яндекс Доставка`,
           `📦 ПВЗ: ${deliveryPoint || 'не указан'}`,
           `💳 Доставка оплачена вместе с заказом: ${order.deliveryPrice.toLocaleString('ru-RU')} ₽`,
+          ...yandexShipmentLines,
         ]
 
     const packingLines =
@@ -444,4 +533,3 @@ export async function fulfillOrder(
 
   return order
 }
-

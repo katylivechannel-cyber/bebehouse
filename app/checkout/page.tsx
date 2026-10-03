@@ -11,9 +11,11 @@ export default function CheckoutPage() {
   const [fullName, setFullName] = useState('')
  const [phone, setPhone] = useState('+7')
   const [email, setEmail] = useState('')
+  const [city, setCity] = useState('')
 const [cdekPoint, setCdekPoint] = useState('')
   const isFormValid =
   fullName.trim().length > 0 &&
+  city.trim().length > 0 &&
   cdekPoint.trim().length > 0
 
   return (
@@ -90,7 +92,22 @@ const [cdekPoint, setCdekPoint] = useState('')
 </div>
     <div className="flex flex-col gap-2">
   <label htmlFor="cdekPoint" className="text-sm font-medium">
-    Адрес ПВЗ СДЭК
+   <div className="flex flex-col gap-2">
+  <label htmlFor="city" className="text-sm font-medium">
+    Город
+  </label>
+
+  <input
+    id="city"
+    type="text"
+    value={city}
+    onChange={(e) => setCity(e.target.value)}
+    placeholder="Например: Санкт-Петербург"
+    autoComplete="address-level2"
+    className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-base outline-none"
+  />
+</div>
+    ПВЗ СДЭК
   </label>
 
   <input
@@ -128,6 +145,7 @@ const [cdekPoint, setCdekPoint] = useState('')
   fullName,
   phone,
   email,
+    city,
   cdekPoint,
   items: lines.map((line) => ({
     productId: line.product.id,
@@ -146,6 +164,7 @@ if (data.paymentLink) {
     fullName,
     phone,
     email,
+     city,
     cdekPoint,
     items: lines,
     total,

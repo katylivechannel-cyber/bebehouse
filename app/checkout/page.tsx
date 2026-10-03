@@ -293,12 +293,6 @@ export default function CheckoutPage() {
             </p>
           )}
 
-          {cityStatus === 'found' && (
-            <p className="px-1 text-xs font-medium">
-              ✓ Город найден
-            </p>
-          )}
-
           {cityStatus === 'not-found' && (
             <p className="px-1 text-xs text-muted-foreground">
               Не удалось найти город. Проверьте название.
@@ -349,11 +343,7 @@ export default function CheckoutPage() {
                   className="h-12 w-full rounded-2xl border border-border bg-background px-4 text-base outline-none"
                 />
 
-                {pointSearch.trim().length === 0 ? (
-                  <p className="px-1 text-xs text-muted-foreground">
-                    Начните вводить улицу или адрес ПВЗ
-                  </p>
-                ) : (
+                {pointSearch.trim().length > 0 && (
                   <div className="max-h-72 overflow-y-auto rounded-2xl border border-border bg-background">
                     {filteredPoints.length > 0 ? (
                       filteredPoints.map((point) => (

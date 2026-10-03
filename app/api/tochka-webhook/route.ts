@@ -61,13 +61,8 @@ export async function POST(request: Request) {
 
    console.log('TOCHKA WEBHOOK VERIFIED:', payload)
 
-const operationId =
-  payload?.Data?.operationId ??
-  payload?.Data?.Operation?.[0]?.operationId
-
-const paymentStatus =
-  payload?.Data?.status ??
-  payload?.Data?.Operation?.[0]?.status
+const operationId = payload?.operationId
+const paymentStatus = payload?.status
 
 console.log('TOCHKA WEBHOOK PAYMENT:', {
   operationId,

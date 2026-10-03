@@ -100,9 +100,12 @@ const DEFAULT_PRODUCT = {
   height: 10,
 }
 
-// Оставляем примерно по 1 см между товаром
-// и стенками коробки на пупырку.
+// Примерно по 1 см от стенок коробки под пупырку.
 const BOX_PADDING = 1
+
+// Если точная 3D-раскладка не получилась,
+// разрешаем запасной расчёт максимум до 80% объёма.
+const MAX_VOLUME_USAGE = 0.8
 
 function volume(
   length: number,
@@ -110,6 +113,14 @@ function volume(
   height: number
 ) {
   return length * width * height
+}
+
+function sortedDimensions(
+  length: number,
+  width: number,
+  height: number
+) {
+  return [length, width, height].sort((a, b) => a - b)
 }
 
 function getProductData(product: Product) {
@@ -200,12 +211,12 @@ function fitsInsideBox(
   )
 }
 
-function tryPack(
+// Точная попытка разложить товары.
+// Здесь оставляем место у стенок под пупырку.
+function tryExactPack(
   products: Dimensions[],
   box: ShippingBox
 ) {
-  // Уменьшаем полезное пространство коробки
-  // на 1 см с каждой стороны под упаковочный материал.
   const usableBox: Dimensions = {
     length: Math.max(
       0,
@@ -238,8 +249,6 @@ function tryPack(
       },
     ]
 
-    // После каждого уже размещённого предмета
-    // пробуем свободные позиции справа, спереди и сверху.
     for (const item of placed) {
       positions.push(
         {
@@ -303,6 +312,84 @@ function tryPack(
   return true
 }
 
+// Запасная проверка.
+// Нужна на случай, если простой 3D-алгоритм
+// не смог найти реальную раскладку.
+//
+// 1. Каждый товар должен физически помещаться.
+// 2. Суммарный объём товаров — максимум 80% коробки.
+function tryVolumeFallback(
+  products: Dimensions[],
+  box: ShippingBox
+) {
+  const usableBox: Dimensions = {
+    length: Math.max(
+      0,
+      box.length - BOX_PADDING * 2
+    ),
+    width: Math.max(
+      0,
+      box.width - BOX_PADDING * 2
+    ),
+    height: Math.max(
+      0,
+      box.height - BOX_PADDING * 2
+    ),
+  }
+
+  const usableBoxDimensions = sortedDimensions(
+    usableBox.length,
+    usableBox.width,
+    usableBox.height
+  )
+
+  const everyProductFits =
+    products.every((product) => {
+      const productDimensions =
+        sortedDimensions(
+          product.length,
+          product.width,
+          product.height
+        )
+
+      return (
+        productDimensions[0] <=
+          usableBoxDimensions[0] &&
+        productDimensions[1] <=
+          usableBoxDimensions[1] &&
+        productDimensions[2] <=
+          usableBoxDimensions[2]
+      )
+    })
+
+  if (!everyProductFits) {
+    return false
+  }
+
+  const totalProductVolume =
+    products.reduce(
+      (sum, product) =>
+        sum +
+        volume(
+          product.length,
+          product.width,
+          product.height
+        ),
+      0
+    )
+
+  const boxVolume = volume(
+    box.length,
+    box.width,
+    box.height
+  )
+
+  return (
+    totalProductVolume <=
+    boxVolume * MAX_VOLUME_USAGE
+  )
+}
+
 export function packOrder(
   items: PackingItem[]
 ): PackingResult | null {
@@ -347,7 +434,8 @@ export function packOrder(
     }
   }
 
-  // Сначала самые маленькие коробки.
+  // Проверяем коробки от самой маленькой
+  // к самой большой по объёму.
   const boxes = [...SHIPPING_BOXES].sort(
     (a, b) =>
       volume(
@@ -363,7 +451,14 @@ export function packOrder(
   )
 
   for (const box of boxes) {
-    if (tryPack(products, box)) {
+    const exactFit =
+      tryExactPack(products, box)
+
+    const fallbackFit =
+      !exactFit &&
+      tryVolumeFallback(products, box)
+
+    if (exactFit || fallbackFit) {
       return {
         box,
         weight:
@@ -374,7 +469,5 @@ export function packOrder(
     }
   }
 
-  // Если ничего не подошло — заказ всё равно
-  // можно оформить. Доставку рассчитаем после упаковки.
   return null
 }

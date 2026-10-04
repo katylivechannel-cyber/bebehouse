@@ -56,6 +56,8 @@ export default function CheckoutPage() {
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('+7')
   const [email, setEmail] = useState('')
+  const [personalDataConsent, setPersonalDataConsent] =
+    useState(false)
 
   const [city, setCity] = useState('')
   const [cityCode, setCityCode] = useState<number | null>(null)
@@ -557,7 +559,8 @@ export default function CheckoutPage() {
     email.trim().length > 0 &&
     cityCode !== null &&
     deliveryIsValid &&
-    lines.length > 0
+    lines.length > 0 &&
+    personalDataConsent
 
   return (
     <main className="flex flex-col gap-6 pb-8">
@@ -1110,6 +1113,52 @@ export default function CheckoutPage() {
             {formatPrice(paymentTotal)}
           </span>
         </div>
+      </section>
+
+      <section className="rounded-3xl bg-card p-5">
+        <label className="flex cursor-pointer items-start gap-3">
+          <input
+            type="checkbox"
+            checked={personalDataConsent}
+            onChange={(e) =>
+              setPersonalDataConsent(e.target.checked)
+            }
+            className="mt-1 size-4 shrink-0 accent-[#411D0A]"
+          />
+
+          <span className="text-sm leading-relaxed text-muted-foreground">
+            Я даю{' '}
+            <Link
+              href="/personal-data-consent"
+              target="_blank"
+              className="font-medium text-foreground underline underline-offset-4"
+            >
+              согласие на обработку персональных данных
+            </Link>
+            {' '}и ознакомлен(а) с{' '}
+            <Link
+              href="/privacy"
+              target="_blank"
+              className="font-medium text-foreground underline underline-offset-4"
+            >
+              Политикой обработки персональных данных
+            </Link>
+            .
+          </span>
+        </label>
+
+        <p className="mt-4 border-t border-border pt-4 text-xs leading-relaxed text-muted-foreground">
+          Нажимая «Перейти к оплате», вы подтверждаете,
+          что ознакомились и принимаете условия{' '}
+          <Link
+            href="/offer"
+            target="_blank"
+            className="font-medium text-foreground underline underline-offset-4"
+          >
+            Публичной оферты
+          </Link>
+          .
+        </p>
       </section>
 
       <button

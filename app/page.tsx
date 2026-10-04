@@ -51,8 +51,8 @@ export default async function HomePage() {
               Новинки
             </h2>
 
-            <Link
-              href="/catalog"
+           <Link
+  href="/catalog?collection=new"
               className="shrink-0 text-sm text-muted-foreground underline underline-offset-4"
             >
               Смотреть все
@@ -88,8 +88,8 @@ export default async function HomePage() {
               Бестселлеры
             </h2>
 
-            <Link
-              href="/catalog"
+           <Link
+  href="/catalog?collection=bestseller"
               className="shrink-0 text-sm text-muted-foreground underline underline-offset-4"
             >
               Смотреть все

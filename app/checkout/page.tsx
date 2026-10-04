@@ -1115,51 +1115,51 @@ export default function CheckoutPage() {
         </div>
       </section>
 
-      <section className="rounded-3xl bg-card p-5">
-        <label className="flex cursor-pointer items-start gap-3">
-          <input
-            type="checkbox"
-            checked={personalDataConsent}
-            onChange={(e) =>
-              setPersonalDataConsent(e.target.checked)
-            }
-            className="mt-1 size-4 shrink-0 accent-[#411D0A]"
-          />
+      
+  <section className="rounded-3xl bg-card p-5">
+  <label className="flex cursor-pointer items-start gap-3">
+    <input
+      type="checkbox"
+      checked={personalDataConsent}
+      onChange={(e) =>
+        setPersonalDataConsent(e.target.checked)
+      }
+      className="mt-1 size-4 shrink-0 accent-[#411D0A]"
+    />
 
-          <span className="text-sm leading-relaxed text-muted-foreground">
-            Я даю{' '}
-            <Link
-              href="/personal-data-consent"
-              target="_blank"
-              className="font-medium text-foreground underline underline-offset-4"
-            >
-              согласие на обработку персональных данных
-            </Link>
-            {' '}и ознакомлен(а) с{' '}
-            <Link
-              href="/privacy"
-              target="_blank"
-              className="font-medium text-foreground underline underline-offset-4"
-            >
-              Политикой обработки персональных данных
-            </Link>
-            .
-          </span>
-        </label>
+    <span className="text-sm leading-relaxed text-muted-foreground">
+      Я даю{' '}
+      <Link
+        href="/personal-data-consent"
+        target="_blank"
+        className="font-medium text-foreground underline underline-offset-4"
+      >
+        согласие на обработку персональных данных
+      </Link>
+      .
+    </span>
+  </label>
 
-        <p className="mt-4 border-t border-border pt-4 text-xs leading-relaxed text-muted-foreground">
-          Нажимая «Перейти к оплате», вы подтверждаете,
-          что ознакомились и принимаете условия{' '}
-          <Link
-            href="/offer"
-            target="_blank"
-            className="font-medium text-foreground underline underline-offset-4"
-          >
-            Публичной оферты
-          </Link>
-          .
-        </p>
-      </section>
+  <p className="mt-4 border-t border-border pt-4 text-xs leading-relaxed text-muted-foreground">
+    Оформляя заказ, вы соглашаетесь с условиями{' '}
+    <Link
+      href="/offer"
+      target="_blank"
+      className="font-medium text-foreground underline underline-offset-4"
+    >
+      Публичной оферты
+    </Link>
+    {' '}и подтверждаете ознакомление с{' '}
+    <Link
+      href="/privacy"
+      target="_blank"
+      className="font-medium text-foreground underline underline-offset-4"
+    >
+      Политикой обработки персональных данных
+    </Link>
+    .
+  </p>
+</section>
 
       <button
         type="button"

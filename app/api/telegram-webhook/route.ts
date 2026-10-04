@@ -187,9 +187,25 @@ export async function POST(request: Request) {
     }
 
     /*
-      Команда /start от покупателя
+      Команда /start от покупателя.
+      Если покупатель пришёл из письма,
+      сохраняем номер его заказа.
     */
     if (message.text.startsWith('/start')) {
+      const match =
+        message.text.match(
+          /^\/start(?:@\w+)?\s+order_(\d+)/
+        )
+
+      if (match) {
+        const orderNumber = match[1]
+
+        await redis.set(
+          `telegram:order:${senderChatId}`,
+          orderNumber
+        )
+      }
+
       await telegramRequest(
         token,
         'sendMessage',
@@ -222,9 +238,17 @@ export async function POST(request: Request) {
         ? `@${message.from.username}`
         : 'username не указан'
 
+    const orderNumber =
+      await redis.get<string>(
+        `telegram:order:${senderChatId}`
+      )
+
     const text = [
       '💬 Новое сообщение в bébéhouse',
       '',
+      ...(orderNumber
+        ? [`🧾 Заказ №${orderNumber}`, '']
+        : []),
       `👤 ${name}`,
       `Telegram: ${username}`,
       '',

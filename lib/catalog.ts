@@ -17,6 +17,10 @@ export type Product = {
   country?: string
   categories: string[]
 
+  // Остатки
+  quantity: number
+  expectedDate: string
+
   // Данные для расчёта доставки
   weight: number | null
   length: number | null
@@ -114,8 +118,6 @@ function isTrue(value: string) {
   )
 }
 
-// Число из Google Sheets.
-// Пустая ячейка = null.
 function parseNumber(value?: string): number | null {
   if (!value?.trim()) return null
 
@@ -129,6 +131,23 @@ function parseNumber(value?: string): number | null {
   return Number.isFinite(number) && number > 0
     ? number
     : null
+}
+
+function parseQuantity(value?: string): number {
+  if (!value?.trim()) return 0
+
+  const number = Number(
+    value
+      .trim()
+      .replace(/\s/g, '')
+      .replace(',', '.')
+  )
+
+  if (!Number.isFinite(number) || number <= 0) {
+    return 0
+  }
+
+  return Math.floor(number)
 }
 
 export async function getCatalog() {
@@ -161,13 +180,19 @@ export async function getCatalog() {
         const categoryName =
           row[col('Категория')]?.trim() ?? ''
 
-        const available =
-          row[col('В наличии')] ?? ''
+        const quantity = parseQuantity(
+          row[col('Количество')]
+        )
 
+        const expectedDate =
+          row[col('Ожидается')]?.trim() ?? ''
+
+        // Не показываем товар, если его нет
+        // и поступление не ожидается
         if (
           !name ||
           !categoryName ||
-          !isTrue(available)
+          (quantity === 0 && !expectedDate)
         ) {
           return []
         }
@@ -214,6 +239,10 @@ export async function getCatalog() {
               slugify(categoryName),
             ],
 
+            // Остатки
+            quantity,
+            expectedDate,
+
             // Данные для доставки
             weight: parseNumber(
               row[col('Вес, г')]
@@ -231,8 +260,6 @@ export async function getCatalog() {
               row[col('Высота, см')]
             ),
 
-            // Если группа не заполнена —
-            // считаем товар обычным
             packingGroup:
               row[
                 col('Упаковочная группа')
@@ -254,16 +281,26 @@ export async function getCatalog() {
       }
     )
 
+    // Категории берём только из товаров,
+    // которые сейчас отображаются в магазине
     const names = [
       ...new Set(
-        rows
-          .filter((row) =>
-            isTrue(
-              row[col('В наличии')] ?? ''
-            )
-          )
-          .map((row) =>
-            row[col('Категория')]?.trim()
+        products
+          .flatMap((product) =>
+            rows
+              .filter((row) => {
+                const categoryName =
+                  row[col('Категория')]?.trim()
+
+                return (
+                  categoryName &&
+                  slugify(categoryName) ===
+                    product.categories[0]
+                )
+              })
+              .map((row) =>
+                row[col('Категория')]?.trim()
+              )
           )
           .filter(Boolean) as string[]
       ),

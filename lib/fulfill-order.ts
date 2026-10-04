@@ -521,7 +521,7 @@ export async function fulfillOrder(
                   </p>
 
                   <a
-                    href="https://t.me/bebe_house_bot"
+                    href="https://t.me/bebe_house_bot?start=order_${order.orderNumber}"
                     style="display: inline-block; background: #411D0A; color: #ffffff; text-decoration: none; padding: 13px 24px; border-radius: 999px; font-weight: 600;"
                   >
                     Написать нам

@@ -7,13 +7,19 @@ import { getCatalog } from '@/lib/catalog'
 export default async function HomePage() {
   const { categories, products } = await getCatalog()
 
-  const newProducts = products.filter(
-    (product) => product.isNew
-  )
-  
-  const bestsellerProducts = products.filter(
-    (product) => product.isBestseller
-  )
+ const newProducts = products.filter(
+  (product) =>
+    product.isNew && product.quantity > 0
+)
+
+const bestsellerProducts = products
+  .filter((product) => product.isBestseller)
+  .sort((a, b) => {
+    const aExpected = a.quantity <= 0 ? 1 : 0
+    const bExpected = b.quantity <= 0 ? 1 : 0
+
+    return aExpected - bExpected
+  })
 
   return (
     <main className="flex flex-col gap-7 pb-6">

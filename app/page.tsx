@@ -10,7 +10,7 @@ export default async function HomePage() {
   const newProducts = products.filter(
     (product) => product.isNew
   )
-
+  
   const bestsellerProducts = products.filter(
     (product) => product.isBestseller
   )

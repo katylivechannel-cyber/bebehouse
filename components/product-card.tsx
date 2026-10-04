@@ -13,23 +13,38 @@ export function ProductCard({
   const isExpected =
     product.quantity <= 0 && product.expectedDate
 
+  const secondImage =
+    product.images?.[1]
+
   return (
     <Link
       href={`/product/${product.id}`}
       className="group flex flex-col gap-2.5 transition-transform active:scale-[0.98]"
     >
       <div className="relative aspect-[4/5] overflow-hidden rounded-3xl border border-border/60 bg-card">
+        {/* Первое фото */}
         <Image
           src={product.image || '/placeholder.svg'}
           alt={product.name}
           fill
           priority={priority}
           sizes="(max-width: 448px) 50vw, 224px"
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          className="object-cover transition-all duration-500 group-hover:scale-105 group-hover:opacity-0"
         />
 
+        {/* Второе фото при наведении */}
+        {secondImage && (
+          <Image
+            src={secondImage}
+            alt={product.name}
+            fill
+            sizes="(max-width: 448px) 50vw, 224px"
+            className="object-cover opacity-0 transition-all duration-500 group-hover:scale-105 group-hover:opacity-100"
+          />
+        )}
+
         {isExpected && (
-          <div className="absolute bottom-2 left-2 right-2 rounded-full bg-background/90 px-3 py-1.5 text-center text-[11px] font-medium text-foreground backdrop-blur-sm">
+          <div className="absolute bottom-2 left-2 right-2 z-10 rounded-full bg-background/90 px-3 py-1.5 text-center text-[11px] font-medium text-foreground backdrop-blur-sm">
             Ожидается {product.expectedDate}
           </div>
         )}

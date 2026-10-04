@@ -6,9 +6,30 @@ import { useCart } from '@/components/cart-provider'
 import { formatPrice } from '@/lib/format'
 import { haptic, hapticSuccess } from '@/lib/telegram'
 
-export function AddToCartBar({ productId, price }: { productId: string; price: number }) {
+export function AddToCartBar({
+  productId,
+  price,
+  availableQuantity,
+}: {
+  productId: string
+  price: number
+  availableQuantity: number
+}) {
   const { quantityOf, add, setQuantity } = useCart()
   const quantity = quantityOf(productId)
+
+  // Товара пока нет — ничего купить нельзя
+  if (availableQuantity <= 0) {
+    return (
+      <div className="fixed inset-x-0 bottom-nav z-30 px-4 pb-3">
+        <div className="mx-auto max-w-md">
+          <div className="flex h-15 w-full items-center justify-center rounded-full bg-muted text-base font-semibold text-muted-foreground">
+            Пока нет в наличии
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="fixed inset-x-0 bottom-nav z-30 px-4 pb-3">
@@ -36,28 +57,46 @@ export function AddToCartBar({ productId, price }: { productId: string; price: n
                 aria-label="Уменьшить количество"
                 className="flex size-12 items-center justify-center rounded-full active:bg-border"
               >
-                <Minus className="size-4" aria-hidden="true" />
+                <Minus
+                  className="size-4"
+                  aria-hidden="true"
+                />
               </button>
-              <span className="w-6 text-center text-base font-semibold tabular-nums" aria-live="polite">
+
+              <span
+                className="w-6 text-center text-base font-semibold tabular-nums"
+                aria-live="polite"
+              >
                 {quantity}
               </span>
+
               <button
                 type="button"
+                disabled={quantity >= availableQuantity}
                 onClick={() => {
-                  add(productId)
-                  haptic()
+                  if (quantity < availableQuantity) {
+                    add(productId)
+                    haptic()
+                  }
                 }}
                 aria-label="Увеличить количество"
-                className="flex size-12 items-center justify-center rounded-full active:bg-border"
+                className="flex size-12 items-center justify-center rounded-full active:bg-border disabled:cursor-not-allowed disabled:opacity-30"
               >
-                <Plus className="size-4" aria-hidden="true" />
+                <Plus
+                  className="size-4"
+                  aria-hidden="true"
+                />
               </button>
             </div>
+
             <Link
               href="/cart"
               className="flex h-full flex-1 items-center justify-center gap-2 rounded-full bg-secondary text-sm font-semibold text-secondary-foreground active:opacity-90"
             >
-              <Check className="size-4" aria-hidden="true" />
+              <Check
+                className="size-4"
+                aria-hidden="true"
+              />
               {'В корзине · '}
               {formatPrice(price * quantity)}
             </Link>

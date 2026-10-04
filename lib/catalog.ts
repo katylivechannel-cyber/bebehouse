@@ -22,7 +22,12 @@ export type Product = {
   length: number | null
   width: number | null
   height: number | null
-  packingGroup: string
+    packingGroup: string
+
+  // Подборки на главной
+  isNew: boolean
+  isBestseller: boolean
+}
 }
 
 const CSV_URL =
@@ -190,6 +195,9 @@ export async function getCatalog() {
           packingGroup:
             row[col('Упаковочная группа')]?.trim().toLowerCase() ||
             'обычный',
+                    // Подборки на главной
+          isNew: isTrue(row[col('Новинка')] ?? ''),
+          isBestseller: isTrue(row[col('Бестселлер')] ?? ''),
         },
       ]
     })

@@ -442,39 +442,100 @@ export async function fulfillOrder(
             to: [order.email],
             subject:
               `Заказ №${order.orderNumber} — bébéhouse 🤍`,
-            html: `
-              <div style="font-family: Arial, sans-serif; color: #411D0A; line-height: 1.6; max-width: 600px; margin: 0 auto;">
+          html: `
+  <div style="font-family: Arial, sans-serif; color: #411D0A; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 24px 16px;">
 
-                <h2 style="margin-bottom: 8px;">
-                  Спасибо за заказ, ${escapeHtml(order.fullName)}! 🤍
-                </h2>
+    <div style="text-align: center; margin-bottom: 32px;">
+      <div style="font-family: Georgia, serif; font-size: 36px; font-weight: 600;">
+        bébéhouse
+      </div>
 
-                <p style="margin-top: 0; color: #7a6a61;">
-                  Заказ №${order.orderNumber}
-                </p>
+      <div style="font-size: 13px; color: #7a6a61; margin-top: 6px;">
+        Детские европейские бренды в одном месте
+      </div>
+    </div>
 
-                <p>
-                  Оплата прошла успешно.
-                </p>
+    <div style="background: #FAF7F2; border-radius: 20px; padding: 24px; margin-bottom: 28px;">
+      <div style="font-family: Georgia, serif; font-size: 24px; font-weight: 600;">
+        Спасибо за заказ 🤍
+      </div>
 
-                <h3 style="margin-top: 28px; margin-bottom: 4px;">
-                  Ваш заказ
-                </h3>
+      <p style="margin: 10px 0 0;">
+        ${escapeHtml(order.fullName)}, оплата прошла успешно.
+        Мы уже готовим ваш заказ к отправке.
+      </p>
+    </div>
 
-                ${itemsHtml}
+    <div style="font-size: 14px; color: #7a6a61;">
+      Заказ №${order.orderNumber}
+    </div>
 
-                <div style="margin-top: 18px;">
-                  Товары: ${order.productsTotal.toLocaleString('ru-RU')} ₽
-                </div>
+    <h3 style="font-family: Georgia, serif; font-size: 21px; margin-top: 24px; margin-bottom: 4px;">
+      Ваш заказ
+    </h3>
 
-                ${
-                  isCdek
-                    ? ''
-                    : `
-                      <div style="margin-top: 4px;">
-                        Доставка: ${order.deliveryPrice.toLocaleString('ru-RU')} ₽
-                      </div>
-                    `
+    ${itemsHtml}
+
+    <div style="margin-top: 18px;">
+      Товары: ${order.productsTotal.toLocaleString('ru-RU')} ₽
+    </div>
+
+    ${
+      isCdek
+        ? ''
+        : `
+          <div style="margin-top: 4px;">
+            Доставка: ${order.deliveryPrice.toLocaleString('ru-RU')} ₽
+          </div>
+        `
+    }
+
+    <div style="margin-top: 8px; font-size: 18px;">
+      <strong>
+        Оплачено: ${order.total.toLocaleString('ru-RU')} ₽
+      </strong>
+    </div>
+
+    <div style="margin-top: 28px; padding: 18px; background: #FAF7F2; border-radius: 16px;">
+      <strong>
+        Доставка — ${escapeHtml(deliveryName)}
+      </strong>
+
+      <div style="margin-top: 6px;">
+        ${escapeHtml(deliveryPoint || 'ПВЗ не указан')}
+      </div>
+
+      <div style="margin-top: 6px; color: #7a6a61;">
+        ${escapeHtml(deliveryPaymentText)}
+      </div>
+    </div>
+
+    ${trackingText}
+
+    <div style="margin-top: 32px; padding-top: 26px; border-top: 1px solid #eee8e3; text-align: center;">
+      <div style="font-family: Georgia, serif; font-size: 20px; font-weight: 600;">
+        Остались вопросы?
+      </div>
+
+      <p style="color: #7a6a61; font-size: 14px; margin: 8px 0 18px;">
+        Напишите нам в Telegram — мы всегда на связи 🤍
+      </p>
+
+      <a
+        href="https://t.me/bebe_house_bot"
+        style="display: inline-block; background: #411D0A; color: #ffffff; text-decoration: none; padding: 13px 24px; border-radius: 999px; font-weight: 600;"
+      >
+        Написать нам
+      </a>
+    </div>
+
+    <p style="margin-top: 32px; text-align: center; color: #7a6a61; font-size: 14px;">
+      С любовью,<br />
+      <strong style="color: #411D0A;">bébéhouse 🤍</strong>
+    </p>
+
+  </div>
+`,
                 }
 
                 <div style="margin-top: 8px; font-size: 18px;">

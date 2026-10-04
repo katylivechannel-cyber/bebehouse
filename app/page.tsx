@@ -1,10 +1,19 @@
 import Link from 'next/link'
 import { CategoryCard } from '@/components/category-card'
+import { ProductCard } from '@/components/product-card'
 import { SearchBar } from '@/components/search-bar'
 import { getCatalog } from '@/lib/catalog'
 
 export default async function HomePage() {
   const { categories, products } = await getCatalog()
+
+  const newProducts = products.filter(
+    (product) => product.isNew
+  )
+
+  const bestsellerProducts = products.filter(
+    (product) => product.isBestseller
+  )
 
   return (
     <main className="flex flex-col gap-7 pb-6">
@@ -29,6 +38,82 @@ export default async function HomePage() {
 
       <SearchBar />
 
+      {newProducts.length > 0 && (
+        <section
+          aria-labelledby="new-products-title"
+          className="flex flex-col gap-4"
+        >
+          <div className="flex items-center justify-between gap-4">
+            <h2
+              id="new-products-title"
+              className="font-serif text-[28px] font-semibold leading-none"
+            >
+              Новинки
+            </h2>
+
+            <Link
+              href="/catalog"
+              className="shrink-0 text-sm text-muted-foreground underline underline-offset-4"
+            >
+              Смотреть все
+            </Link>
+          </div>
+
+          <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {newProducts.map((product, index) => (
+              <li
+                key={product.id}
+                className="w-[44%] shrink-0 snap-start"
+              >
+                <ProductCard
+                  product={product}
+                  priority={index < 2}
+                />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {bestsellerProducts.length > 0 && (
+        <section
+          aria-labelledby="bestsellers-title"
+          className="flex flex-col gap-4"
+        >
+          <div className="flex items-center justify-between gap-4">
+            <h2
+              id="bestsellers-title"
+              className="font-serif text-[28px] font-semibold leading-none"
+            >
+              Бестселлеры
+            </h2>
+
+            <Link
+              href="/catalog"
+              className="shrink-0 text-sm text-muted-foreground underline underline-offset-4"
+            >
+              Смотреть все
+            </Link>
+          </div>
+
+          <ul className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {bestsellerProducts.map((product, index) => (
+              <li
+                key={product.id}
+                className="w-[44%] shrink-0 snap-start"
+              >
+                <ProductCard
+                  product={product}
+                  priority={
+                    newProducts.length === 0 && index < 2
+                  }
+                />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <section
         aria-labelledby="categories-title"
         className="flex flex-col gap-4"
@@ -52,7 +137,11 @@ export default async function HomePage() {
                     )
                   ).length
                 }
-                priority={index < 4}
+                priority={
+                  newProducts.length === 0 &&
+                  bestsellerProducts.length === 0 &&
+                  index < 4
+                }
               />
             </li>
           ))}
@@ -65,8 +154,8 @@ export default async function HomePage() {
         </p>
 
         <p className="mt-1 text-sm leading-relaxed text-[#7A6A61]">
-          Всё о доставке, оплате, возврате и
-          bébéhouse — в одном месте.
+          Всё о доставке, оплате, возврате и bébéhouse — в
+          одном месте.
         </p>
 
         <Link
@@ -79,4 +168,3 @@ export default async function HomePage() {
     </main>
   )
 }
-

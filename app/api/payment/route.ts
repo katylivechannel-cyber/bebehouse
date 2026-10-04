@@ -116,19 +116,36 @@ export async function POST(request: Request) {
       const quantity =
         Math.floor(Number(item.quantity))
 
-      if (
-        !Number.isInteger(quantity) ||
-        quantity < 1 ||
-        quantity > 20
-      ) {
-        return NextResponse.json(
-          {
-            error:
-              'Некорректное количество товара',
-          },
-          { status: 400 }
-        )
-      }
+     if (
+  !Number.isInteger(quantity) ||
+  quantity < 1
+) {
+  return NextResponse.json(
+    {
+      error:
+        'Некорректное количество товара',
+    },
+    { status: 400 }
+  )
+}
+
+if (product.quantity <= 0) {
+  return NextResponse.json(
+    {
+      error: `${product.name} закончился`,
+    },
+    { status: 400 }
+  )
+}
+
+if (quantity > product.quantity) {
+  return NextResponse.json(
+    {
+      error: `В наличии только ${product.quantity} шт.: ${product.name}`,
+    },
+    { status: 400 }
+  )
+}
 
       productsTotal +=
         product.price * quantity

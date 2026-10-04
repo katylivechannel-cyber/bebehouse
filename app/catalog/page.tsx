@@ -22,9 +22,23 @@ export default async function CatalogPage({
 
   const collectionProducts =
     collection === 'new'
-      ? products.filter((product) => product.isNew)
+      ? products.filter(
+          (product) =>
+            product.isNew && product.quantity > 0
+        )
       : collection === 'bestseller'
-        ? products.filter((product) => product.isBestseller)
+        ? products
+            .filter(
+              (product) => product.isBestseller
+            )
+            .sort((a, b) => {
+              const aExpected =
+                a.quantity <= 0 ? 1 : 0
+              const bExpected =
+                b.quantity <= 0 ? 1 : 0
+
+              return aExpected - bExpected
+            })
         : products
 
   const title =

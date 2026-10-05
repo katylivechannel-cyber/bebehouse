@@ -8,6 +8,7 @@ type BrandCardProps = {
   image: string
   count: number
   priority?: boolean
+  largeLogo?: boolean
 }
 
 export function BrandCard({
@@ -16,6 +17,7 @@ export function BrandCard({
   image,
   count,
   priority,
+  largeLogo = false,
 }: BrandCardProps) {
   return (
     <Link
@@ -24,7 +26,13 @@ export function BrandCard({
     >
       <div className="relative aspect-[2/1] overflow-hidden bg-[#FAF7F2]">
         <div className="absolute inset-0 flex items-center justify-center p-6">
-          <div className="relative h-[55%] w-[78%]">
+          <div
+            className={
+              largeLogo
+                ? 'relative h-[78%] w-[95%]'
+                : 'relative h-[55%] w-[78%]'
+            }
+          >
             <Image
               src={image}
               alt={name}

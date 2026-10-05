@@ -189,6 +189,7 @@ const bestsellerProducts = products
         name="Konges Sløjd"
         slug="konges-slojd"
         image="/images/categories/konges-slojd.png"
+        largeLogo
        count={
   products.filter((product) => {
     const brand = product.brand

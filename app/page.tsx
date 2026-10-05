@@ -3,6 +3,7 @@ import { CategoryCard } from '@/components/category-card'
 import { ProductCard } from '@/components/product-card'
 import { SearchBar } from '@/components/search-bar'
 import { getCatalog } from '@/lib/catalog'
+import { BrandCard } from '@/components/brand-card'
 
 export default async function HomePage() {
   const { categories, products } = await getCatalog()
@@ -154,6 +155,71 @@ const bestsellerProducts = products
         </ul>
       </section>
 
+      <section
+  aria-labelledby="brands-title"
+  className="flex flex-col gap-4"
+>
+  <h2
+    id="brands-title"
+    className="font-serif text-[28px] font-semibold leading-none"
+  >
+    Бренды
+  </h2>
+
+  <ul className="grid grid-cols-2 gap-3">
+    <li>
+      <BrandCard
+        name="Little Dutch"
+        slug="little-dutch"
+        image="/images/categories/little-dutch.png"
+        count={
+          products.filter(
+            (product) =>
+              product.brand
+                .trim()
+                .toLowerCase() ===
+              'little dutch'
+          ).length
+        }
+      />
+    </li>
+
+    <li>
+      <BrandCard
+        name="Konges Sløjd"
+        slug="konges-slojd"
+        image="/images/categories/konges-slojd.png"
+        count={
+          products.filter(
+            (product) =>
+              product.brand
+                .trim()
+                .toLowerCase() ===
+              'konges sløjd'
+          ).length
+        }
+      />
+    </li>
+
+    <li>
+      <BrandCard
+        name="Élhée"
+        slug="elhee"
+        image="/images/categories/elhee.png"
+        count={
+          products.filter(
+            (product) =>
+              product.brand
+                .trim()
+                .toLowerCase() ===
+              'élhée'
+          ).length
+        }
+      />
+    </li>
+  </ul>
+</section>
+      
       <section className="mt-2 rounded-[24px] bg-[#FAF7F2] px-5 py-5">
         <p className="font-serif text-xl font-semibold text-[#411D0A]">
           Есть вопросы?

@@ -9,56 +9,127 @@ export const metadata: Metadata = {
 
 type Collection = 'new' | 'bestseller'
 
+const brands: Record<
+  string,
+  {
+    name: string
+    aliases: string[]
+  }
+> = {
+  'little-dutch': {
+    name: 'Little Dutch',
+    aliases: ['little dutch'],
+  },
+
+  'konges-slojd': {
+    name: 'Konges Sløjd',
+    aliases: [
+      'konges sløjd',
+      'konges slojd',
+    ],
+  },
+
+  elhee: {
+    name: 'Élhée',
+    aliases: [
+      'élhée',
+      'elhee',
+    ],
+  },
+}
+
 export default async function CatalogPage({
   searchParams,
 }: {
   searchParams: Promise<{
     q?: string
     collection?: Collection
+    brand?: string
   }>
 }) {
-  const { q, collection } = await searchParams
-  const { products, categories } = await getCatalog()
+  const {
+    q,
+    collection,
+    brand,
+  } = await searchParams
 
-  const collectionProducts =
-    collection === 'new'
-      ? products.filter(
-          (product) =>
-            product.isNew && product.quantity > 0
-        )
-      : collection === 'bestseller'
-        ? products
-            .filter(
-              (product) => product.isBestseller
-            )
-            .sort((a, b) => {
-              const aExpected =
-                a.quantity <= 0 ? 1 : 0
-              const bExpected =
-                b.quantity <= 0 ? 1 : 0
+  const { products, categories } =
+    await getCatalog()
 
-              return aExpected - bExpected
-            })
-        : products
+  const selectedBrand = brand
+    ? brands[brand]
+    : undefined
 
-  const title =
-    collection === 'new'
+  let filteredProducts = products
+
+  if (collection === 'new') {
+    filteredProducts = products.filter(
+      (product) =>
+        product.isNew &&
+        product.quantity > 0
+    )
+  }
+
+  if (collection === 'bestseller') {
+    filteredProducts = products
+      .filter(
+        (product) =>
+          product.isBestseller
+      )
+      .sort((a, b) => {
+        const aExpected =
+          a.quantity <= 0 ? 1 : 0
+
+        const bExpected =
+          b.quantity <= 0 ? 1 : 0
+
+        return aExpected - bExpected
+      })
+  }
+
+  if (selectedBrand) {
+    filteredProducts =
+      filteredProducts.filter(
+        (product) => {
+          const productBrand =
+            product.brand
+              .trim()
+              .toLowerCase()
+
+          return selectedBrand.aliases.includes(
+            productBrand
+          )
+        }
+      )
+  }
+
+  const title = selectedBrand
+    ? selectedBrand.name
+    : collection === 'new'
       ? 'Новинки'
       : collection === 'bestseller'
         ? 'Бестселлеры'
         : 'Каталог'
 
+  const showBackButton =
+    Boolean(collection) ||
+    Boolean(selectedBrand)
+
   return (
     <main className="flex flex-col gap-5 pb-6">
-   <PageHeader
-  title={title}
-  backHref={collection ? '/' : undefined}
-/>
+      <PageHeader
+        title={title}
+        backHref={
+          showBackButton
+            ? '/'
+            : undefined
+        }
+      />
 
       <CatalogView
-        key={`${q ?? ''}-${collection ?? ''}`}
+        key={`${q ?? ''}-${collection ?? ''}-${brand ?? ''}`}
         initialQuery={q ?? ''}
-        products={collectionProducts}
+        products={filteredProducts}
         categories={categories}
       />
     </main>

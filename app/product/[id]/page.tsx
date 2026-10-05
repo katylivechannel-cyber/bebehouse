@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ChevronLeft } from 'lucide-react'
+import { ProductBackButton } from '@/components/product-back-button'
 import { AddToCartBar } from '@/components/add-to-cart-bar'
 import { ProductGallery } from '@/components/product-gallery'
 import { getCatalog } from '@/lib/catalog'
@@ -41,7 +40,6 @@ export default async function ProductPage({
 
   if (!product) notFound()
 
-  const backHref = `/category/${product.categories[0]}`
 
   return (
     <main className="flex flex-col gap-6 pb-24">
@@ -51,12 +49,7 @@ export default async function ProductPage({
           name={product.name}
         />
 
-        <Link
-          href={backHref}
-          className="absolute left-4 top-4 z-10 flex size-10 items-center justify-center rounded-full bg-background/80"
-        >
-          <ChevronLeft className="size-5" />
-        </Link>
+        <ProductBackButton />
       </div>
 
       <section className="flex flex-col gap-2">

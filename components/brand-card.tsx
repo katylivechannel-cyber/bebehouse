@@ -22,7 +22,7 @@ export function BrandCard({
       href={`/catalog?brand=${slug}`}
       className="group flex flex-col overflow-hidden rounded-3xl border border-border/60 bg-card transition-transform active:scale-[0.98]"
     >
-      <div className="relative aspect-square overflow-hidden bg-[#FAF7F2]">
+      <<div className="relative aspect-[2/1] overflow-hidden bg-[#FAF7F2]">
         <div className="absolute inset-0 flex items-center justify-center p-8">
           <div className="relative h-[42%] w-[78%]">
             <Image

@@ -41,9 +41,12 @@ const categoryImages: Record<string, string> = {
   'Ролевые игры': '/images/categories/role-play.png',
   'Музыкальные игрушки': '/images/categories/musical.png',
   'Творчество': '/images/categories/creativity.png',
-  'Развивающие игрушки': '/images/categories/educational.png',
-  'Для малышей': '/images/categories/for-babies.png',
-  'Аксессуары': '/images/categories/accessories.png',
+  'Развивающие игрушки':
+    '/images/categories/educational.png',
+  'Для малышей':
+    '/images/categories/for-babies.png',
+  'Аксессуары':
+    '/images/categories/accessories.png',
 }
 
 function slugify(value: string) {
@@ -61,6 +64,16 @@ function slugify(value: string) {
     slugs[value.trim()] ||
     value.trim().toLowerCase().replace(/\s+/g, '-')
   )
+}
+
+// Разделяем несколько категорий из одной ячейки.
+// Например:
+// "Развивающие игрушки, Для малышей"
+function parseCategories(value: string) {
+  return value
+    .split(',')
+    .map((category) => category.trim())
+    .filter(Boolean)
 }
 
 function parseCSV(text: string): string[][] {
@@ -86,14 +99,21 @@ function parseCSV(text: string): string[][] {
       (char === '\n' || char === '\r') &&
       !quoted
     ) {
-      if (char === '\r' && text[i + 1] === '\n') {
+      if (
+        char === '\r' &&
+        text[i + 1] === '\n'
+      ) {
         i++
       }
 
       row.push(field)
       field = ''
 
-      if (row.some((cell) => cell.trim() !== '')) {
+      if (
+        row.some(
+          (cell) => cell.trim() !== ''
+        )
+      ) {
         rows.push(row)
       }
 
@@ -105,7 +125,9 @@ function parseCSV(text: string): string[][] {
 
   row.push(field)
 
-  if (row.some((cell) => cell.trim() !== '')) {
+  if (
+    row.some((cell) => cell.trim() !== '')
+  ) {
     rows.push(row)
   }
 
@@ -113,12 +135,18 @@ function parseCSV(text: string): string[][] {
 }
 
 function isTrue(value: string) {
-  return ['true', 'истина', '1', 'yes', 'да'].includes(
-    value.trim().toLowerCase()
-  )
+  return [
+    'true',
+    'истина',
+    '1',
+    'yes',
+    'да',
+  ].includes(value.trim().toLowerCase())
 }
 
-function parseNumber(value?: string): number | null {
+function parseNumber(
+  value?: string
+): number | null {
   if (!value?.trim()) return null
 
   const number = Number(
@@ -128,12 +156,15 @@ function parseNumber(value?: string): number | null {
       .replace(',', '.')
   )
 
-  return Number.isFinite(number) && number > 0
+  return Number.isFinite(number) &&
+    number > 0
     ? number
     : null
 }
 
-function parseQuantity(value?: string): number {
+function parseQuantity(
+  value?: string
+): number {
   if (!value?.trim()) return 0
 
   const number = Number(
@@ -143,7 +174,10 @@ function parseQuantity(value?: string): number {
       .replace(',', '.')
   )
 
-  if (!Number.isFinite(number) || number <= 0) {
+  if (
+    !Number.isFinite(number) ||
+    number <= 0
+  ) {
     return 0
   }
 
@@ -162,23 +196,30 @@ export async function getCatalog() {
       )
     }
 
-    const rows = parseCSV(await response.text())
+    const rows = parseCSV(
+      await response.text()
+    )
+
     const headers =
-      rows.shift()?.map((h) => h.trim()) ?? []
+      rows.shift()?.map((h) => h.trim()) ??
+      []
 
     const col = (name: string) =>
       headers.indexOf(name)
 
-    const products: Product[] = rows.flatMap(
-      (row, index) => {
+    const products: Product[] =
+      rows.flatMap((row, index) => {
         const name =
           row[col('Название')]?.trim() ?? ''
 
         const brand =
           row[col('Бренд')]?.trim() ?? ''
 
-        const categoryName =
+        const categoryValue =
           row[col('Категория')]?.trim() ?? ''
+
+        const categoryNames =
+          parseCategories(categoryValue)
 
         const quantity = parseQuantity(
           row[col('Количество')]
@@ -191,7 +232,7 @@ export async function getCatalog() {
         // и поступление не ожидается
         if (
           !name ||
-          !categoryName ||
+          categoryNames.length === 0 ||
           (quantity === 0 && !expectedDate)
         ) {
           return []
@@ -235,9 +276,12 @@ export async function getCatalog() {
               row[col('Возраст')]?.trim() ||
               '',
 
-            categories: [
-              slugify(categoryName),
-            ],
+            // Один товар теперь может
+            // находиться в нескольких категориях
+            categories: categoryNames.map(
+              (category) =>
+                slugify(category)
+            ),
 
             // Остатки
             quantity,
@@ -278,31 +322,33 @@ export async function getCatalog() {
             ),
           },
         ]
-      }
-    )
+      })
 
-    // Категории берём только из товаров,
-    // которые сейчас отображаются в магазине
+    // Собираем все категории отдельно.
+    // Если в одной ячейке указано две,
+    // каждая становится своей категорией.
+    const visibleCategorySlugs =
+      new Set(
+        products.flatMap(
+          (product) => product.categories
+        )
+      )
+
     const names = [
       ...new Set(
-        products
-          .flatMap((product) =>
-            rows
-              .filter((row) => {
-                const categoryName =
-                  row[col('Категория')]?.trim()
-
-                return (
-                  categoryName &&
-                  slugify(categoryName) ===
-                    product.categories[0]
-                )
-              })
-              .map((row) =>
-                row[col('Категория')]?.trim()
-              )
+        rows
+          .flatMap((row) =>
+            parseCategories(
+              row[
+                col('Категория')
+              ]?.trim() ?? ''
+            )
           )
-          .filter(Boolean) as string[]
+          .filter((name) =>
+            visibleCategorySlugs.has(
+              slugify(name)
+            )
+          )
       ),
     ]
 

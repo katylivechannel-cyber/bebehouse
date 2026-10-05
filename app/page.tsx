@@ -189,15 +189,18 @@ const bestsellerProducts = products
         name="Konges Sløjd"
         slug="konges-slojd"
         image="/images/categories/konges-slojd.png"
-        count={
-          products.filter(
-            (product) =>
-              product.brand
-                .trim()
-                .toLowerCase() ===
-              'konges sløjd'
-          ).length
-        }
+       count={
+  products.filter((product) => {
+    const brand = product.brand
+      .trim()
+      .toLowerCase()
+
+    return (
+      brand === 'konges sløjd' ||
+      brand === 'konges slojd'
+    )
+  }).length
+}
       />
     </li>
 
@@ -207,14 +210,18 @@ const bestsellerProducts = products
         slug="elhee"
         image="/images/categories/elhee.png"
         count={
-          products.filter(
-            (product) =>
-              product.brand
-                .trim()
-                .toLowerCase() ===
-              'élhée'
-          ).length
-        }
+  products.filter((product) => {
+    const brand = product.brand
+      .trim()
+      .toLowerCase()
+
+    return (
+      brand === 'élhée' ||
+      brand === 'elhee' ||
+      brand === 'elhee baby'
+    )
+  }).length
+}
       />
     </li>
   </ul>

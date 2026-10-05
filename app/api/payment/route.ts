@@ -417,7 +417,6 @@ if (quantity > product.quantity) {
 
             paymentMode: [
               'sbp',
-              'card',
             ],
 
             redirectUrl:

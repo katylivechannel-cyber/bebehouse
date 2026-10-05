@@ -50,7 +50,10 @@ export default async function CatalogPage({
 
   return (
     <main className="flex flex-col gap-5 pb-6">
-      <PageHeader title={title} />
+   <PageHeader
+  title={title}
+  backHref={collection ? '/' : undefined}
+/>
 
       <CatalogView
         key={`${q ?? ''}-${collection ?? ''}`}

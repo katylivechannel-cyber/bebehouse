@@ -29,8 +29,8 @@ export function BrandCard({
           <div
             className={
               largeLogo
-                ? 'relative h-[78%] w-[95%]'
-                : 'relative h-[55%] w-[78%]'
+  ? 'relative h-full w-full scale-[1.55]'
+  : 'relative h-[55%] w-[78%]'
             }
           >
             <Image

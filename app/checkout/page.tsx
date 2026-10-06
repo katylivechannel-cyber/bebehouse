@@ -53,6 +53,8 @@ type YandexDelivery = {
 export default function CheckoutPage() {
   const { lines, count, total } = useCart()
 
+  const hasFreeDelivery = total >= 10000
+
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('+7')
   const [email, setEmail] = useState('')
@@ -542,7 +544,8 @@ export default function CheckoutPage() {
   */
   const paymentTotal =
     deliveryMethod === 'yandex' &&
-    yandexDelivery
+    yandexDelivery &&
+    !hasFreeDelivery
       ? total + yandexDelivery.customerPrice
       : total
 
@@ -752,7 +755,7 @@ export default function CheckoutPage() {
                     {isLoadingCdekDelivery
                       ? 'Рассчитываем...'
                       : cdekDelivery
-                        ? `${formatPrice(cdekDelivery.price)}${
+                        ? `${hasFreeDelivery ? 'Бесплатно' : formatPrice(cdekDelivery.price)}${
                             cdekDelivery.periodMin !== undefined &&
                             cdekDelivery.periodMax !== undefined
                               ? ` · примерно ${
@@ -790,7 +793,7 @@ export default function CheckoutPage() {
                     {isLoadingYandexCityDelivery
                       ? 'Рассчитываем...'
                       : yandexCityDelivery
-                        ? `${formatPrice(yandexCityDelivery.customerPrice)}${
+                        ? `${hasFreeDelivery ? 'Бесплатно' : formatPrice(yandexCityDelivery.customerPrice)}${
                             yandexCityDelivery.deliveryDays !== undefined &&
                             yandexCityDelivery.deliveryDays !== null
                               ? ` · примерно ${
@@ -1045,14 +1048,18 @@ export default function CheckoutPage() {
                     </span>
 
                     <span className="shrink-0 text-sm font-semibold">
-                      {formatPrice(
-                        cdekDelivery.price
-                      )}
+                      {hasFreeDelivery
+                        ? 'Бесплатно'
+                        : formatPrice(
+                            cdekDelivery.price
+                          )}
                     </span>
                   </div>
 
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Оплата доставки при получении.
+                    {hasFreeDelivery
+                      ? 'Бесплатная доставка для заказов от 10 000 ₽.'
+                      : 'Оплата доставки при получении.'}
                   </p>
                 </>
               ) : cdekDeliveryCalculated ===
@@ -1086,14 +1093,18 @@ export default function CheckoutPage() {
                     </span>
 
                     <span className="shrink-0 text-sm font-semibold">
-                      {formatPrice(
-                        yandexDelivery.customerPrice
-                      )}
+                      {hasFreeDelivery
+                        ? 'Бесплатно'
+                        : formatPrice(
+                            yandexDelivery.customerPrice
+                          )}
                     </span>
                   </div>
 
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Оплачивается сразу вместе с заказом.
+                    {hasFreeDelivery
+                      ? 'Бесплатная доставка для заказов от 10 000 ₽.'
+                      : 'Оплачивается сразу вместе с заказом.'}
                   </p>
                 </>
               ) : (
@@ -1242,7 +1253,8 @@ export default function CheckoutPage() {
                 productsTotal: total,
 
                 deliveryPrice:
-                  deliveryMethod === 'yandex'
+                  deliveryMethod === 'yandex' &&
+                  !hasFreeDelivery
                     ? yandexDelivery?.customerPrice ??
                       0
                     : 0,

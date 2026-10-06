@@ -4,6 +4,7 @@ import { ProductCard } from '@/components/product-card'
 import { SearchBar } from '@/components/search-bar'
 import { getCatalog } from '@/lib/catalog'
 import { BrandCard } from '@/components/brand-card'
+import { HomeMenuButton } from '@/components/home-menu-button'
 
 export default async function HomePage() {
   const { categories, products } = await getCatalog()
@@ -24,24 +25,28 @@ const bestsellerProducts = products
 
   return (
     <main className="flex flex-col gap-7 pb-6">
-      <header className="flex flex-col items-center gap-2 pt-8 text-center">
-        <p className="font-serif text-[44px] font-semibold leading-none tracking-tight">
-          bébéhouse
-        </p>
+      <header className="relative flex flex-col items-center gap-2 pt-8 text-center">
+  <div className="absolute left-0 top-8">
+    <HomeMenuButton />
+  </div>
 
-        <div
-          className="flex items-center gap-2"
-          aria-hidden="true"
-        >
-          <span className="size-1.5 rounded-full bg-secondary" />
-          <span className="size-1.5 rounded-full bg-accent" />
-          <span className="size-1.5 rounded-full bg-secondary" />
-        </div>
+  <p className="font-serif text-[44px] font-semibold leading-none tracking-tight">
+    bébéhouse
+  </p>
 
-        <h1 className="text-balance text-sm text-muted-foreground">
-          Детские европейские бренды в одном месте
-        </h1>
-      </header>
+  <div
+    className="flex items-center gap-2"
+    aria-hidden="true"
+  >
+    <span className="size-1.5 rounded-full bg-secondary" />
+    <span className="size-1.5 rounded-full bg-accent" />
+    <span className="size-1.5 rounded-full bg-secondary" />
+  </div>
+
+  <h1 className="text-balance text-sm text-muted-foreground">
+    Детские европейские бренды в одном месте
+  </h1>
+</header>
 
       <SearchBar />
 

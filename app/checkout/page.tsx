@@ -773,9 +773,11 @@ export default function CheckoutPage() {
                         : 'Стоимость после упаковки'}
                   </span>
 
-                  <span className="mt-1 block text-xs text-muted-foreground">
-                    Оплата доставки при получении
-                  </span>
+                  {!hasFreeDelivery && (
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      Оплата доставки при получении
+                    </span>
+                  )}
                 </button>
 
                 <button

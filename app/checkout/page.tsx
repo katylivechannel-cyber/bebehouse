@@ -753,24 +753,36 @@ export default function CheckoutPage() {
 
                   <span className="mt-1 block text-xs font-medium">
                     {hasFreeDelivery
-                      ? 'Бесплатно'
+                      ? `Бесплатно${
+                          cdekDelivery?.periodMin !== undefined &&
+                          cdekDelivery?.periodMax !== undefined
+                            ? ` · примерно ${
+                                cdekDelivery.periodMin + 1 ===
+                                cdekDelivery.periodMax + 1
+                                  ? `${cdekDelivery.periodMin + 1} дн.`
+                                  : `${cdekDelivery.periodMin + 1}–${
+                                      cdekDelivery.periodMax + 1
+                                    } дн.`
+                              }`
+                            : ''
+                        }`
                       : isLoadingCdekDelivery
                         ? 'Рассчитываем...'
                         : cdekDelivery
-                        ? `${hasFreeDelivery ? 'Бесплатно' : formatPrice(cdekDelivery.price)}${
-                            cdekDelivery.periodMin !== undefined &&
-                            cdekDelivery.periodMax !== undefined
-                              ? ` · примерно ${
-                                  cdekDelivery.periodMin + 1 ===
-                                  cdekDelivery.periodMax + 1
-                                    ? `${cdekDelivery.periodMin + 1} дн.`
-                                    : `${cdekDelivery.periodMin + 1}–${
-                                        cdekDelivery.periodMax + 1
-                                      } дн.`
-                                }`
-                              : ''
-                          }`
-                        : 'Стоимость после упаковки'}
+                          ? `${formatPrice(cdekDelivery.price)}${
+                              cdekDelivery.periodMin !== undefined &&
+                              cdekDelivery.periodMax !== undefined
+                                ? ` · примерно ${
+                                    cdekDelivery.periodMin + 1 ===
+                                    cdekDelivery.periodMax + 1
+                                      ? `${cdekDelivery.periodMin + 1} дн.`
+                                      : `${cdekDelivery.periodMin + 1}–${
+                                          cdekDelivery.periodMax + 1
+                                        } дн.`
+                                  }`
+                                : ''
+                            }`
+                          : 'Стоимость после упаковки'}
                   </span>
 
                   {!hasFreeDelivery && (
@@ -808,9 +820,11 @@ export default function CheckoutPage() {
                         : 'Расчёт недоступен'}
                   </span>
 
-                  <span className="mt-1 block text-xs text-muted-foreground">
-                    Оплата доставки сразу
-                  </span>
+                  {!hasFreeDelivery && (
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      Оплата доставки сразу
+                    </span>
+                  )}
                 </button>
               </div>
             </div>

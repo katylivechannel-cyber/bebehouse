@@ -40,7 +40,6 @@ export default async function ProductPage({
 
   if (!product) notFound()
 
-
   return (
     <main className="flex flex-col gap-6 pb-24">
       <div className="relative -mx-4">
@@ -101,6 +100,18 @@ export default async function ProductPage({
 
           <p className="text-pretty text-[15px] leading-relaxed text-foreground/80">
             {product.description}
+          </p>
+        </section>
+      )}
+
+      {product.size && (
+        <section className="rounded-2xl bg-[#FAF7F2] px-4 py-3.5">
+          <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted-foreground">
+            Размер
+          </p>
+
+          <p className="mt-1 font-serif text-[18px] font-semibold text-foreground">
+            {product.size}
           </p>
         </section>
       )}

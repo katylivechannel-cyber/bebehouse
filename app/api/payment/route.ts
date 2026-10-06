@@ -163,6 +163,9 @@ if (quantity > product.quantity) {
       )
     }
 
+    const hasFreeDelivery =
+      productsTotal >= 10000
+
     /*
       По умолчанию сумма оплаты —
       только стоимость товаров.
@@ -355,7 +358,9 @@ if (quantity > product.quantity) {
                    = 525 ₽
       */
       deliveryPrice =
-        Math.ceil(yandexPrice / 0.93)
+        hasFreeDelivery
+          ? 0
+          : Math.ceil(yandexPrice / 0.93)
 
       packingInfo = {
         box: shipping.boxName,

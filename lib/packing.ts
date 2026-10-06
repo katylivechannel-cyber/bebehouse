@@ -41,9 +41,9 @@ type PlacedItem = Position & Dimensions
 export const SHIPPING_BOXES: ShippingBox[] = [
   {
     id: 'box-27-16-5',
-    name: '27 × 16 × 5',
+    name: '27 × 16.5 × 5',
     length: 27,
-    width: 16,
+    width: 16.5,
     height: 5,
     emptyWeight: 100,
   },
@@ -520,6 +520,51 @@ export function packOrder(
 ): PackingResult | null {
   if (!items.length) {
     return null
+  }
+
+  // Специальная упаковка, если в заказе
+  // только один товар в количестве 1 шт.
+  if (
+    items.length === 1 &&
+    items[0].quantity === 1
+  ) {
+    const product = items[0].product
+    const data = getProductData(product)
+
+    // Коляски не кладём в коробку.
+    // Оборачиваем пупырчатой плёнкой:
+    // +2 см к каждому габариту.
+    if (product.packingGroup === 'коляска') {
+      return {
+        box: {
+          id: 'stroller-wrap',
+          name: 'Коляска — пупырчатая плёнка',
+          length: data.length + 2,
+          width: data.width + 2,
+          height: data.height + 2,
+          emptyWeight: 0,
+        },
+        weight: data.weight,
+        estimated: data.estimated,
+      }
+    }
+
+    // Чайный набор отправляется
+    // в собственной коробке.
+    if (product.packingGroup === 'чайный-набор') {
+      return {
+        box: {
+          id: 'tea-set-own-box',
+          name: 'Чайный набор — своя коробка',
+          length: data.length,
+          width: data.width,
+          height: data.height,
+          emptyWeight: 0,
+        },
+        weight: data.weight,
+        estimated: data.estimated,
+      }
+    }
   }
 
   const products: ProductForPacking[] = []

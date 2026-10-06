@@ -95,6 +95,14 @@ export const SHIPPING_BOXES: ShippingBox[] = [
     height: 37.7,
     emptyWeight: 320,
   },
+  {
+    id: 'box-69-39-42',
+    name: '69 × 39 × 42',
+    length: 69,
+    width: 39,
+    height: 42,
+    emptyWeight: 500,
+  },
 ]
 
 const DEFAULT_PRODUCT = {

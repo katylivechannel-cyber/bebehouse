@@ -71,7 +71,7 @@ export default async function HomePage() {
             </Link>
           </div>
 
-          <ul className="-mx-4 mt-2 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+         <ul className="-mr-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pr-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {newProducts.map((product, index) => (
               <li
                 key={product.id}
@@ -108,7 +108,7 @@ export default async function HomePage() {
             </Link>
           </div>
 
-          <ul className="-mx-4 mt-2 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <ul className="-mr-4 flex snap-x snap-mandatory gap-3 overflow-x-auto pr-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {bestsellerProducts.map((product, index) => (
               <li
                 key={product.id}

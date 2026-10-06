@@ -14,6 +14,7 @@ export type Product = {
   images: string[]
   description: string
   age: string
+  size: string
   country?: string
   categories: string[]
 
@@ -274,6 +275,11 @@ export async function getCatalog() {
 
             age:
               row[col('Возраст')]?.trim() ||
+              '',
+
+            // Размер для покупателя
+            size:
+              row[col('Размер')]?.trim() ||
               '',
 
             // Один товар теперь может

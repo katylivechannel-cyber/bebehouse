@@ -752,9 +752,11 @@ export default function CheckoutPage() {
                   </span>
 
                   <span className="mt-1 block text-xs font-medium">
-                    {isLoadingCdekDelivery
-                      ? 'Рассчитываем...'
-                      : cdekDelivery
+                    {hasFreeDelivery
+                      ? 'Бесплатно'
+                      : isLoadingCdekDelivery
+                        ? 'Рассчитываем...'
+                        : cdekDelivery
                         ? `${hasFreeDelivery ? 'Бесплатно' : formatPrice(cdekDelivery.price)}${
                             cdekDelivery.periodMin !== undefined &&
                             cdekDelivery.periodMax !== undefined
@@ -1066,11 +1068,15 @@ export default function CheckoutPage() {
                 false ? (
                 <>
                   <p className="text-sm font-medium">
-                    Доставка СДЭК — оплата при получении
+                    {hasFreeDelivery
+                      ? 'Доставка СДЭК до ПВЗ — бесплатно'
+                      : 'Доставка СДЭК — оплата при получении'}
                   </p>
 
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Стоимость доставки будет рассчитана после упаковки заказа.
+                    {hasFreeDelivery
+                      ? 'Бесплатная доставка для заказов от 10 000 ₽.'
+                      : 'Стоимость доставки будет рассчитана после упаковки заказа.'}
                   </p>
                 </>
               ) : null}

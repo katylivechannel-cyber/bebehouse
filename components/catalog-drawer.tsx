@@ -61,20 +61,16 @@ export function CatalogDrawer({
   open,
   onClose,
 }: CatalogDrawerProps) {
-  const [brandsOpen, setBrandsOpen] =
-    useState(false)
+  const [brandsOpen, setBrandsOpen] = useState(false)
 
   useEffect(() => {
     if (!open) return
 
-    const previousOverflow =
-      document.body.style.overflow
-
+    const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
 
     return () => {
-      document.body.style.overflow =
-        previousOverflow
+      document.body.style.overflow = previousOverflow
     }
   }, [open])
 
@@ -98,8 +94,8 @@ export function CatalogDrawer({
         aria-label="Каталог"
         className="absolute inset-y-0 left-0 flex w-[88%] max-w-[390px] flex-col bg-background shadow-xl"
       >
-        <div className="flex items-center justify-between border-b border-border/60 px-5 pb-4 pt-6">
-          <p className="font-serif text-[30px] font-semibold">
+        <div className="flex items-center justify-between border-b border-border/60 px-5 pb-3 pt-5">
+          <p className="font-serif text-[26px] font-semibold">
             Каталог
           </p>
 
@@ -107,7 +103,7 @@ export function CatalogDrawer({
             type="button"
             onClick={closeDrawer}
             aria-label="Закрыть"
-            className="flex size-10 items-center justify-center rounded-full active:bg-muted"
+            className="flex size-9 items-center justify-center rounded-full active:bg-muted"
           >
             <X
               className="size-5"
@@ -116,12 +112,12 @@ export function CatalogDrawer({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 pb-10 pt-6">
-          <nav className="flex flex-col">
+        <div className="flex-1 overflow-y-auto px-5 pb-6 pt-3">
+          <nav className="flex flex-col items-start">
             <Link
               href="/catalog?collection=new"
               onClick={closeDrawer}
-              className="py-3 text-[17px] font-medium text-[#B99B6B]"
+              className="w-full py-2 text-left text-[15px] font-medium text-[#B99B6B]"
             >
               Новинки
             </Link>
@@ -129,41 +125,39 @@ export function CatalogDrawer({
             <Link
               href="/catalog?collection=bestseller"
               onClick={closeDrawer}
-              className="py-3 text-[17px] font-medium text-[#B99B6B]"
+              className="w-full py-2 text-left text-[15px] font-medium text-[#B99B6B]"
             >
               Бестселлеры
             </Link>
 
-            <div className="my-3 h-px bg-border/50" />
+            <div className="my-2 h-px w-full bg-border/50" />
 
             {categories.map((category) => (
               <Link
                 key={category.href}
                 href={category.href}
                 onClick={closeDrawer}
-                className="py-3.5 text-[17px] text-foreground"
+                className="w-full py-2 text-left text-[15px] text-foreground"
               >
                 {category.name}
               </Link>
             ))}
 
-            <div className="my-3 h-px bg-border/50" />
+            <div className="my-2 h-px w-full bg-border/50" />
 
             <button
               type="button"
               onClick={() => {
-                setBrandsOpen(
-                  (current) => !current
-                )
+                setBrandsOpen((current) => !current)
                 haptic('soft')
               }}
-              className="flex w-full items-center justify-between py-3.5 text-left text-[17px] font-medium"
+              className="flex w-full items-center justify-between py-2 text-left text-[15px] font-medium"
             >
               <span>БРЕНДЫ</span>
 
               <ChevronDown
                 className={cn(
-                  'size-5 text-muted-foreground transition-transform duration-200',
+                  'size-4 text-muted-foreground transition-transform duration-200',
                   brandsOpen && 'rotate-180'
                 )}
                 strokeWidth={1.6}
@@ -172,7 +166,7 @@ export function CatalogDrawer({
 
             <div
               className={cn(
-                'grid transition-all duration-300',
+                'grid w-full transition-all duration-300',
                 brandsOpen
                   ? 'grid-rows-[1fr] opacity-100'
                   : 'grid-rows-[0fr] opacity-0'
@@ -185,7 +179,7 @@ export function CatalogDrawer({
                       key={brand.href}
                       href={brand.href}
                       onClick={closeDrawer}
-                      className="py-3.5 text-[16px] text-foreground/80"
+                      className="py-2 text-left text-[15px] text-foreground/80"
                     >
                       {brand.name}
                     </Link>

@@ -13,21 +13,8 @@ export function ProductCard({
   const isExpected =
     product.quantity <= 0 && product.expectedDate
 
-  const secondImage = product.images?.[1]
-
-  const dimensions = [
-    product.length,
-    product.width,
-    product.height,
-  ].filter(
-    (value): value is number =>
-      typeof value === 'number' && value > 0
-  )
-
-  const sizeLabel =
-    dimensions.length > 0
-      ? `${dimensions.join(' × ')} см`
-      : null
+  const secondImage =
+    product.images?.[1]
 
   return (
     <Link
@@ -35,6 +22,7 @@ export function ProductCard({
       className="group flex flex-col gap-2.5 transition-transform active:scale-[0.98]"
     >
       <div className="relative aspect-[4/5] overflow-hidden rounded-3xl border border-border/60 bg-card">
+        {/* Первое фото */}
         <Image
           src={product.image || '/placeholder.svg'}
           alt={product.name}
@@ -44,6 +32,7 @@ export function ProductCard({
           className="object-cover transition-all duration-500 group-hover:scale-105 group-hover:opacity-0"
         />
 
+        {/* Второе фото при наведении */}
         {secondImage && (
           <Image
             src={secondImage}
@@ -70,15 +59,7 @@ export function ProductCard({
           {product.name}
         </h3>
 
-        {sizeLabel && (
-          <div className="mt-1">
-            <span className="inline-flex rounded-full bg-[#F1EAE1] px-2.5 py-1 text-[11px] font-medium text-[#7A6A61]">
-              {sizeLabel}
-            </span>
-          </div>
-        )}
-
-        <p className="mt-1 text-[15px] font-semibold">
+        <p className="mt-0.5 text-[15px] font-semibold">
           {formatPrice(product.price)}
         </p>
 

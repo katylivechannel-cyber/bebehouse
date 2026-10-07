@@ -463,6 +463,8 @@ const hasFreeDelivery =
               'sbp',
             ],
 
+            ttl: 5,
+            
             redirectUrl:
               'https://bebehouse-6b95.vercel.app/payment-success',
 
@@ -512,6 +514,7 @@ const hasFreeDelivery =
       {
         operationId,
         orderNumber,
+        reservationId,
 
         fullName,
         phone,

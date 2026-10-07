@@ -30,12 +30,17 @@ export async function reserveStock(
     }
   }
 
+  const now = Date.now()
+  const expiresAt =
+    now + RESERVATION_SECONDS * 1000
+
   const keys = items.map(
-    (item) => `stock:reserved:${item.productId}`
+    (item) => `stock:reservations:${item.productId}`
   )
 
   const args: (string | number)[] = [
-    RESERVATION_SECONDS,
+    now,
+    expiresAt,
     reservationId,
   ]
 
@@ -44,20 +49,61 @@ export async function reserveStock(
   }
 
   const script = `
-    local ttl = tonumber(ARGV[1])
-    local reservationId = ARGV[2]
+    local now = tonumber(ARGV[1])
+    local expiresAt = tonumber(ARGV[2])
+    local reservationId = ARGV[3]
 
     for i = 1, #KEYS do
+      redis.call(
+        'ZREMRANGEBYSCORE',
+        KEYS[i],
+        '-inf',
+        now
+      )
+
+      local members =
+        redis.call('ZRANGE', KEYS[i], 0, -1)
+
+      local reserved = 0
+
+      for _, member in ipairs(members) do
+        local separator =
+          string.find(member, '|', 1, true)
+
+        if separator then
+          local quantity =
+            tonumber(
+              string.sub(member, separator + 1)
+            ) or 0
+
+          reserved = reserved + quantity
+        end
+      end
+
       local stock =
-        tonumber(ARGV[2 + ((i - 1) * 2) + 1])
+        tonumber(
+          ARGV[3 + ((i - 1) * 2) + 1]
+        )
 
       local requested =
-        tonumber(ARGV[2 + ((i - 1) * 2) + 2])
+        tonumber(
+          ARGV[3 + ((i - 1) * 2) + 2]
+        )
 
-      local reserved =
-        tonumber(redis.call('GET', KEYS[i]) or '0')
+      local sold =
+        tonumber(
+          redis.call(
+            'GET',
+            'stock:sold:' ..
+            string.sub(
+              KEYS[i],
+              string.len('stock:reservations:') + 1
+            )
+          ) or '0'
+        )
 
-      local available = stock - reserved
+      local available =
+        stock - sold - reserved
 
       if requested > available then
         return {0, i, available}
@@ -66,10 +112,25 @@ export async function reserveStock(
 
     for i = 1, #KEYS do
       local requested =
-        tonumber(ARGV[2 + ((i - 1) * 2) + 2])
+        tonumber(
+          ARGV[3 + ((i - 1) * 2) + 2]
+        )
 
-      redis.call('INCRBY', KEYS[i], requested)
-      redis.call('EXPIRE', KEYS[i], ttl)
+      local member =
+        reservationId .. '|' .. requested
+
+      redis.call(
+        'ZADD',
+        KEYS[i],
+        expiresAt,
+        member
+      )
+
+      redis.call(
+        'PEXPIRE',
+        KEYS[i],
+        86400000
+      )
     end
 
     return {1}
@@ -87,23 +148,36 @@ export async function reserveStock(
       RESERVATION_SECONDS,
       {
         reservationId,
+
         items: items.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
         })),
+
         createdAt: new Date().toISOString(),
+        expiresAt: new Date(expiresAt).toISOString(),
       }
     )
 
     return { ok: true }
   }
 
-  const failedIndex = Number(result[1]) - 1
-  const failedItem = items[failedIndex]
+  const failedIndex =
+    Number(result[1]) - 1
+
+  const failedItem =
+    items[failedIndex]
 
   return {
     ok: false,
-    productId: failedItem?.productId ?? '',
-    available: Math.max(Number(result[2]) || 0, 0),
+
+    productId:
+      failedItem?.productId ?? '',
+
+    available:
+      Math.max(
+        Number(result[2]) || 0,
+        0
+      ),
   }
 }

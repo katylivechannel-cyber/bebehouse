@@ -44,6 +44,20 @@ export const redis = {
     ])
   },
 
+  async setEx(
+    key: string,
+    seconds: number,
+    value: unknown
+  ) {
+    return command([
+      'SET',
+      key,
+      JSON.stringify(value),
+      'EX',
+      seconds,
+    ])
+  },
+
   async get<T>(
     key: string
   ): Promise<T | null> {
@@ -62,6 +76,66 @@ export const redis = {
 
   async incr(key: string): Promise<number> {
     return command<number>(['INCR', key])
+  },
+
+  async incrBy(
+    key: string,
+    amount: number
+  ): Promise<number> {
+    return command<number>([
+      'INCRBY',
+      key,
+      amount,
+    ])
+  },
+
+  async decrBy(
+    key: string,
+    amount: number
+  ): Promise<number> {
+    return command<number>([
+      'DECRBY',
+      key,
+      amount,
+    ])
+  },
+
+  async expire(
+    key: string,
+    seconds: number
+  ): Promise<number> {
+    return command<number>([
+      'EXPIRE',
+      key,
+      seconds,
+    ])
+  },
+
+  async del(
+    ...keys: string[]
+  ): Promise<number> {
+    if (keys.length === 0) {
+      return 0
+    }
+
+    return command<number>([
+      'DEL',
+      ...keys,
+    ])
+  },
+
+  async eval<T = unknown>(
+    script: string,
+    keys: string[],
+    args: (string | number)[] = []
+  ): Promise<T> {
+    return command<T>([
+      'EVAL',
+      script,
+      keys.length,
+      ...keys,
+      ...args,
+    ])
   },
 
   async scan(

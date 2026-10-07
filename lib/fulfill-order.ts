@@ -1,4 +1,5 @@
 import { redis } from '@/lib/redis'
+import { confirmStockSale } from '@/lib/confirm-stock-sale'
 import {
   createCdekOrder,
 } from '@/lib/cdek-create-order'
@@ -11,6 +12,8 @@ type DeliveryMethod = 'cdek' | 'yandex'
 type StoredOrder = {
   operationId: string
   orderNumber: number
+  reservationId?: string
+  stockConfirmed?: boolean
   fullName: string
   phone: string
   email: string
@@ -83,6 +86,32 @@ export async function fulfillOrder(
   if (!order) {
     throw new Error(
       `Заказ ${operationId} не найден в Redis`
+    )
+  }
+
+  /*
+    ОСТАТКИ
+
+    После подтверждённой оплаты превращаем
+    временный резерв в проданное количество.
+  */
+  if (
+    order.reservationId &&
+    !order.stockConfirmed
+  ) {
+    await confirmStockSale(
+      order.reservationId,
+      order.items.map((item) => ({
+        productId: item.productId,
+        quantity: item.quantity,
+      }))
+    )
+
+    order.stockConfirmed = true
+
+    await redis.set(
+      `order:${operationId}`,
+      order
     )
   }
 

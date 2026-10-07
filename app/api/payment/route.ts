@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
+import { randomUUID } from 'crypto'
 import { getCatalog } from '@/lib/catalog'
 import { packOrder } from '@/lib/packing'
 import { redis } from '@/lib/redis'
+import { reserveStock } from '@/lib/stock-reservation'
 
 type CartItem = {
   productId: string
@@ -156,15 +158,52 @@ if (quantity > product.quantity) {
       })
     }
 
-    if (productsTotal <= 0) {
-      return NextResponse.json(
-        { error: 'Некорректная сумма заказа' },
-        { status: 400 }
-      )
-    }
+   if (productsTotal <= 0) {
+  return NextResponse.json(
+    { error: 'Некорректная сумма заказа' },
+    { status: 400 }
+  )
+}
 
-    const hasFreeDelivery =
-      productsTotal >= 10000
+const reservationId = randomUUID()
+
+const reservation = await reserveStock(
+  reservationId,
+  validatedItems.map(({ product, quantity }) => ({
+    productId: product.id,
+    quantity,
+    stock: product.quantity,
+  }))
+)
+
+if (!reservation.ok) {
+  const product = validatedItems.find(
+    (item) =>
+      item.product.id === reservation.productId
+  )?.product
+
+  const productName =
+    product?.name || 'Один из товаров'
+
+  if (reservation.available <= 0) {
+    return NextResponse.json(
+      {
+        error: `${productName} только что закончился`,
+      },
+      { status: 409 }
+    )
+  }
+
+  return NextResponse.json(
+    {
+      error: `Осталось только ${reservation.available} шт.: ${productName}`,
+    },
+    { status: 409 }
+  )
+}
+
+const hasFreeDelivery =
+  productsTotal >= 10000
 
     /*
       По умолчанию сумма оплаты —

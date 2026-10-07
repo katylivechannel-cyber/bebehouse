@@ -13,7 +13,12 @@ export async function confirmStockSale(
     return
   }
 
-  const keys: string[] = []
+  const confirmationKey =
+    `stock:confirmed:${reservationId}`
+
+  const keys: string[] = [
+    confirmationKey,
+  ]
 
   for (const item of items) {
     keys.push(
@@ -30,11 +35,29 @@ export async function confirmStockSale(
     args.push(item.quantity)
   }
 
+  /*
+    Всё выполняется одной атомарной Redis-командой.
+
+    Ключ stock:confirmed защищает от повторного
+    списания, если Точка пришлёт один webhook
+    несколько раз или fulfillOrder запустится повторно.
+  */
   const script = `
+    local confirmationKey = KEYS[1]
     local reservationId = ARGV[1]
 
-    for i = 1, #KEYS, 2 do
-      local itemIndex = ((i + 1) / 2)
+    if redis.call('EXISTS', confirmationKey) == 1 then
+      return 0
+    end
+
+    redis.call(
+      'SET',
+      confirmationKey,
+      '1'
+    )
+
+    for i = 2, #KEYS, 2 do
+      local itemIndex = (i / 2)
       local quantity =
         tonumber(ARGV[itemIndex + 1])
 

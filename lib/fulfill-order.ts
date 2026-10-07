@@ -14,6 +14,8 @@ type StoredOrder = {
   orderNumber: number
   reservationId?: string
   stockConfirmed?: boolean
+  stockSheetSynced?: boolean
+  stockSheetSyncError?: string | null
   fullName: string
   phone: string
   email: string
@@ -75,6 +77,56 @@ function escapeHtml(value: string) {
     .replaceAll("'", '&#039;')
 }
 
+async function syncStockToGoogleSheet(
+  operationId: string,
+  items: StoredOrder['items']
+) {
+  const url =
+    process.env.GOOGLE_STOCK_WEBHOOK_URL
+
+  const secret =
+    process.env.GOOGLE_STOCK_SECRET
+
+  if (!url || !secret) {
+    throw new Error(
+      'Не настроена синхронизация остатков с Google Sheets'
+    )
+  }
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      secret,
+      orderId: operationId,
+      items: items.map((item) => ({
+        productId: item.productId,
+        quantity: item.quantity,
+      })),
+    }),
+    cache: 'no-store',
+  })
+
+  if (!response.ok) {
+    throw new Error(
+      `Google Sheets вернул HTTP ${response.status}`
+    )
+  }
+
+  const result = await response.json()
+
+  if (!result?.success) {
+    throw new Error(
+      result?.error ||
+        'Google Sheets не подтвердил списание остатков'
+    )
+  }
+
+  return result
+}
+
 export async function fulfillOrder(
   operationId: string
 ) {
@@ -108,6 +160,49 @@ export async function fulfillOrder(
     )
 
     order.stockConfirmed = true
+
+    await redis.set(
+      `order:${operationId}`,
+      order
+    )
+  }
+
+  /*
+    GOOGLE SHEETS
+
+    После подтверждённой оплаты списываем товар
+    из столбца «Количество» в Google Таблице.
+
+    Apps Script сам защищает заказ от повторного
+    списания по operationId.
+  */
+  if (!order.stockSheetSynced) {
+    try {
+      await syncStockToGoogleSheet(
+        operationId,
+        order.items
+      )
+
+      order.stockSheetSynced = true
+      order.stockSheetSyncError = null
+    } catch (error: any) {
+      console.error(
+        'GOOGLE STOCK SYNC ERROR:',
+        error
+      )
+
+      /*
+        Не отменяем выполнение оплаченного заказа,
+        если Google временно недоступен.
+
+        stock:sold в Redis уже защищает этот товар
+        от повторной продажи.
+      */
+      order.stockSheetSynced = false
+      order.stockSheetSyncError =
+        error?.message ||
+        'Не удалось обновить остаток в Google Sheets'
+    }
 
     await redis.set(
       `order:${operationId}`,
